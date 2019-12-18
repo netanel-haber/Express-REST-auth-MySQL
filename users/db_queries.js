@@ -1,6 +1,6 @@
 let mysql = require('mysql');
 let { genHash, genSalt } = require('./hash_and_salt');
-let { generateQueryDescriptor } = require("./db_query_result_packet");
+let { queryConclusion } = require("./db_query_descriptions");
 
 
 const conPool = mysql.createPool({
@@ -13,18 +13,21 @@ const conPool = mysql.createPool({
 
 
 Object.assign(module.exports, {
-    async checkUser(username, password) {
+    async authenticateUser(username, password) {
         let userQuery = `SELECT * FROM info
         WHERE user_name='${username}';`;
 
-        let results = (await queryTheDB(userQuery));
-        if (!results.length) return generateQueryDescriptor(dbQueryCodes[0], null);
+        let { results, error } = (await queryTheDB(userQuery));
+        if (error)
+            return queryConclusion(null, null, error);
 
-        let { hash: userHash, salt: salt } = results;
+        if (!results.length) return queryConclusion(null, "USER_NOT_FOUND", null);
+
+        let { hash: userHash, salt: salt } = results[0];
         if (genHash(password + salt) !== userHash)
-            return generateQueryDescriptor(dbQueryCodes[1], null);
+            return queryConclusion(null, "PASSWORD_INCORRECT", null);
 
-        return generateQueryDescriptor(results);
+        return queryConclusion(results[0], null, null);
     },
     async checkIfGenderExists(genderID) {
         let genderQuery = `SELECT * FROM static_gender
@@ -38,8 +41,8 @@ Object.assign(module.exports, {
 
 
 (async function testQueriesDev() {
-    console.log(await queryTheDB("asdfas"));
-    // console.log(await module.exports.checkUser("yochai", ".azsdfasd"));
+    // console.log(await queryTheDB("asdfas"));
+    console.log(await module.exports.authenticateUser("yochai", ".azdfasd"));
 
     // console.log(`0:${await module.exports.checkIfGenderExists(0)}`);
     // console.log(`1:${await module.exports.checkIfGenderExists(1)}`);
