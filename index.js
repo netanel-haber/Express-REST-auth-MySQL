@@ -1,6 +1,6 @@
 const port = 3000;
-const express = require('express');
-var bodyParser = require('body-parser')
+const express = require('../../../../AppData/Local/Microsoft/TypeScript/2.9/node_modules/@types/express');
+var bodyParser = require('../../../../AppData/Local/Microsoft/TypeScript/2.9/node_modules/@types/body-parser')
 
 const app = express();
 const usersManager = require('./users/usersManager');
@@ -27,7 +27,7 @@ app.get('/user/:userId/details', (req, res) => {
 app.post('/user/details/add', (req, res) => {
     const userDetails = req.body;
     usersManager.addUser(userDetails).then((userDetails) => {
-        console.log(userDetails); 
+        console.log(userDetails);
         res.send(JSON.stringify(userDetails));
     });
 })
