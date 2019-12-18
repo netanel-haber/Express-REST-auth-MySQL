@@ -2,7 +2,7 @@ let crypto = require('crypto');
 let hash = crypto.createHash('sha256');
 
 Object.assign(module.exports, {
-    hashFunc(toHash) {
+    genHash(toHash) {
         return hash.update(toHash, 'utf-8').digest('hex');
     },
     genSalt() {
@@ -10,4 +10,9 @@ Object.assign(module.exports, {
     }
 });
 
-console.log(module.exports.genSalt());
+
+//test hash and salt
+// let password = ".azsdfasd"
+// let salt = module.exports.genSalt();
+// let hasy = module.exports.genHash(password + salt);
+// console.log(`Salt=${salt}\nHash=${hasy}`);
