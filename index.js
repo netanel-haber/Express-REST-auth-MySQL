@@ -5,7 +5,6 @@ const queries = require('./users/db_queries');
 
 const app = express();
 
-
 app.use(bodyParser.json());
 
 app.get('/user/:userId/details', (req, res) => {
@@ -31,15 +30,24 @@ app.post('/user/details/add', (req, res) => {
         console.log(userDetails);
         res.send(JSON.stringify(userDetails));
     });
-})
+});
 
-app.post('/user/details/login', (req, res) => {
+app.post('/user/login', (req, res) => {
     const userDetails = req.body;
     usersManager.addUser(userDetails).then((userDetails) => {
         console.log(userDetails);
         res.send(JSON.stringify(userDetails));
     });
-})
+});
+
+
+app.get('/user/details', (req, res) => {
+    const userDetails = req.body;
+    usersManager.addUser(userDetails).then((userDetails) => {
+        console.log(userDetails);
+        res.send(JSON.stringify(userDetails));
+    });
+});
 
 
 app.listen(port, () => {
