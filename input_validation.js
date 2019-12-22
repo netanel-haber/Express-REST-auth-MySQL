@@ -1,82 +1,104 @@
-const BOTTOM_LIMIT_AGE = 18;
-const TOP_LIMIT_AGE = 100;
+let { getValuesForFieldInTable } = require('./users/db_queries');
 
-const BOTTOM_LIMIT_USERNAME_LENGTH = 6;
-const TOP_LIMIT_USERNAME_LENGTH = 15;
 
-const BOTTOM_LIMIT_NAME_LENGTH = 2;
-const TOP_LIMIT_NAME_LENGTH = 18;
-
-const BOTTOM_LIMIT_PASSWORD_LENGTH = 8;
-const TOP_LIMIT_PASSWORD_LENGTH = 25;
+const RANGES = {
+    username: { bottom: 6, top: 15 },
+    name: { bottom: 2, top: 18 },
+    password: { bottom: 8, top: 25 },
+    age: { bottom: 18, top: 100 }
+};
 
 const FATAL_INPUT_FOR_STRING = str => (str === null) || (str + "" !== str);
 const FATAL_INPUT_FOR_NUMBER = val => isNaN(val);
 
 
 const TEST_FOR = {
-    notNull: str => str !== null,
-    isString: str => str === str + "",
-    notEmpty: str => str !== "",
-    noWhitespace: str => !/ /.test(str),
-    onlyLetters: str => /[a-zA-Z]/.test(str),
-    exceptFirstAllLowerCase: str => /^[A-Z][a-z]+/.test(str),
-    allowedStringLength: ([str, bottomLimit, topLimit]) => (str.length <= topLimit) && (str.length >= bottomLimit),
-    onlyLettersNumbersAndUnderScore: str => !(/\W/.test(str)),
+    notNull: {
+        test: str => str !== null, message: () => "input cannot be null."
+    },
+    isString: {
+        test: str => str === str + "", message: () => "input must be of string form."
+    },
+    notEmpty: {
+        test: str => str !== "", message: () => "input cannot be empty."
+    },
+    noWhitespace: {
+        test: str => !/ /.test(str), message: () => "input cannot contain whitespace."
+    },
+    onlyLetters: {
+        test: str => /[a-zA-Z]/.test(str), message: () => "input can only contain letters."
+    },
+    exceptFirstAllLowerCase: {
+        test: str => /^[A-Z][a-z]+/.test(str), message: () => "input must be so that the first letter is uppercase, while all other letters are lowercase."
+    },
+    allowedStringRange: {
+        test: ([str, bottomLimit, topLimit]) => (str.length <= topLimit) && (str.length >= bottomLimit), message: ([bottomLimit, topLimit]) => `input must fall between ${bottomLimit} and ${topLimit} (incl.).`
+    },
+    onlyLettersNumbersAndUnderScore: {
+        test: str => !(/\W/.test(str)), message: () => "input must conatin only letters, numbers, and the underscore symbol."
+    },
 
-    NaN: val => !isNaN(val),
-    notInteger: val => Number.isInteger(val),
-    numberNotInRange: ([val, lowerLimitInclude, UpperLimitInclude]) => (val <= UpperLimitInclude && val >= lowerLimitInclude)
+    NaN: {
+        test: val => !isNaN(val), message: () => "input must be a number."
+    },
+    notInteger: {
+        test: val => Number.isInteger(val), message: () => "input must be an integer."
+    },
+    allowedNumberRange: {
+        test: ([val, lowerLimitInclude, upperLimitInclude]) => (val <= upperLimitInclude && val >= lowerLimitInclude), message: ([bottomLimit, topLimit]) => `input must fall between ${bottomLimit} and ${topLimit} (incl.).`
+    }
 };
 
-
-Object.assign(module.exports, {
-    validName(str) {
+validation = {
+    name(str) {
         let raisedFlags = !FATAL_INPUT_FOR_STRING(str) ?
             [...collectFlags(str, TEST_FOR.notEmpty, TEST_FOR.noWhitespace, TEST_FOR.onlyLetters, TEST_FOR.exceptFirstAllLowerCase),
-            ...collectFlags([str, BOTTOM_LIMIT_NAME_LENGTH, TOP_LIMIT_NAME_LENGTH], TEST_FOR.allowedStringLength)] :
+            ...collectFlags([str, RANGES.name.bottom, RANGES.name.top], TEST_FOR.allowedStringRange)] :
             [...collectFlags(str, TEST_FOR.notNull, TEST_FOR.isString)]
-        return new ValidationInputSummary("name", raisedFlags.length === 0, raisedFlags);
+        return new InputValidationSummary("name", raisedFlags.length === 0, raisedFlags);
     },
-    validUserName(str) {
+    username(str) {
         let raisedFlags = !FATAL_INPUT_FOR_STRING(str) ?
             [...collectFlags(str, TEST_FOR.notEmpty, TEST_FOR.noWhitespace, TEST_FOR.onlyLettersNumbersAndUnderScore),
-            ...collectFlags([str, BOTTOM_LIMIT_USERNAME_LENGTH, TOP_LIMIT_USERNAME_LENGTH], TEST_FOR.allowedStringLength)] :
+            ...collectFlags([str, RANGES.username.bottom, RANGES.username.top], TEST_FOR.allowedStringRange)] :
             [...collectFlags(str, TEST_FOR.notNull, TEST_FOR.isString)];
-        return new ValidationInputSummary("userName", raisedFlags.length === 0, raisedFlags);
+        return new InputValidationSummary("userName", raisedFlags.length === 0, raisedFlags);
     },
-    validPassword(str) {
+    password(str) {
         let raisedFlags = !FATAL_INPUT_FOR_STRING(str) ?
             [...collectFlags(str, TEST_FOR.notEmpty, TEST_FOR.noWhitespace, TEST_FOR.onlyLettersNumbersAndUnderScore),
-            ...collectFlags([str, BOTTOM_LIMIT_PASSWORD_LENGTH, TOP_LIMIT_PASSWORD_LENGTH], TEST_FOR.allowedStringLength)] :
+            ...collectFlags([str, RANGES.password.bottom, RANGES.password.top], TEST_FOR.allowedStringRange)] :
             [...collectFlags(str, TEST_FOR.notNull, TEST_FOR.isString)];
-        return new ValidationInputSummary("password", raisedFlags.length === 0, raisedFlags);
+        return new InputValidationSummary("password", raisedFlags.length === 0, raisedFlags);
     },
-
-    validGender(val, allowedVals) {
-        let raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
-            [...collectFlags([val, ...allowedVals], TEST_FOR.numberNotInRange), ...collectFlags(val, TEST_FOR.notInteger)] :
-            [...collectFlags(val, TEST_FOR.NaN)];
-        return new ValidationInputSummary("gender", raisedFlags.length === 0, raisedFlags);
+    async gender(val) {
+        let raisedFlags;
+        try {
+            raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
+                [...collectFlags([val, ...await getValuesForFieldInTable("gender_id", "static_gender")], TEST_FOR.allowedNumberRange), ...collectFlags(val, TEST_FOR.notInteger)] :
+                [...collectFlags(val, TEST_FOR.NaN)];
+            return new InputValidationSummary("gender", raisedFlags.length === 0, raisedFlags);
+        }
+        catch (ex) { return new InputValidationSummary("gender", false, ["FATAL ERROR" + ex.toString]); }
     },
-    validAge(val) {
+    age(val) {
         let raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
-            [...collectFlags([val, BOTTOM_LIMIT_AGE, TOP_LIMIT_AGE], TEST_FOR.numberNotInRange), ...collectFlags(val, TEST_FOR.notInteger)] :
+            [...collectFlags([val, RANGES.age.bottom, RANGES.age.top]), ...collectFlags(val, TEST_FOR.notInteger)] :
             [...collectFlags(val, TEST_FOR.NaN)];
-        return new ValidationInputSummary("age", raisedFlags.length === 0, raisedFlags);
+        return new InputValidationSummary("age", raisedFlags.length === 0, raisedFlags);
     }
-});
+};
 
 function collectFlags(args, ...lowLevelTests) {
     let flags = [];
     for (let test of lowLevelTests) {
-        if (!test(args))
-            flags.push(test.name);
+        if (!test.test(args))
+            flags.push(test.message(args.slice(1)));
     }
     return flags;
 }
 
-class ValidationInputSummary {
+class InputValidationSummary {
     constructor(test, bottomLine, failedTests) {
         this.test = test;
         this.bottomLine = bottomLine;
@@ -84,7 +106,29 @@ class ValidationInputSummary {
     }
 }
 
+Object.assign(module.exports, {
+    getTestForFieldName(fieldName) {
+        let fieldNameWords = fieldName.split("_");
+        for (let type of Object.keys(validation))
+            for (let word of fieldNameWords)
+                if (type === word)
+                    return validation[type];
+    },
+    keyValidation(enteredKeys, properKeys, crossReference = false) {
+        let result = true;
+        enteredKeys.forEach(key => {
+            if (properKeys.indexOf(key) === -1) result = false;
+        });
+        if (crossReference) {
+            properKeys.forEach(key => {
+                if (enteredKeys.indexOf(key) !== -1) result = false;
+            });
+        }
+        return result;
+    }
+});
 
-// let f = (module.exports.passWord("sdfa412"));
+
+
+let f = (validation.gender(3));
 // console.log(f);
-

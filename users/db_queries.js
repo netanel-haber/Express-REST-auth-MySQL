@@ -1,8 +1,8 @@
-let mysql = require('mysql');
-let { genHash, genSalt } = require('./hash_and_salt');
-let { queryConclusion } = require('./db_query_descriptions');
-let { wrapArrInChar } = require('../utilities');
-let { validName, validPassword, validGender, validAge, validUsername } = require('../input_validation');
+const mysql = require('mysql');
+const { genHash, genSalt } = require('./hash_and_salt');
+const { DbActionConclusion } = require('./db_action_conclusion');
+const { getTestForFieldName, keyValidation } = require('../input_validation');
+
 
 
 const conPool = mysql.createPool({
@@ -15,62 +15,92 @@ const conPool = mysql.createPool({
 
 //data queries
 Object.assign(module.exports, {
-    async authenticateUser(username, password) {
-        let userQuery = `SELECT * FROM info
-        WHERE user_name='${username}';`;
+    async authenticateUser(data) {
+        let enteredKeys = Object.keys(data);
+        let enteredValues = Object.values(data);
 
-        let { results, error } = (await queryTheDB(userQuery));
+        let areKeysValid = keyValidation(enteredKeys, ["username", "password"]);
+        if (!areKeysValid)
+            return new DbActionConclusion({ keyValidation: false });
+
+        let testResults = [];
+        enteredKeys.forEach(field => {
+            testResults.push((getTestForFieldName(field))(data[field]));
+        });
+        if (testResults.some(({ bottomLine }) => !bottomLine))
+            return new DbActionConclusion({ inputValidationSummaries: testResults });
+
+        let query = `SELECT * FROM users.info
+        WHERE 'username'=?;`;
+        let { results, error } = (await queryTheDB(query, [username]));
         if (error)
-            return queryConclusion(null, null, error);
-
-        if (!results.length) return queryConclusion(null, "USER_NOT_FOUND", null);
-
+            return new DbActionConclusion({ failedError: error });
+        if (!results.length) return DbActionConclusion({ summaryOfQueryIfNotSuccess: "USER_NOT_FOUND" });
         let { hash: userHash, salt: salt } = results[0];
         if (genHash(password + salt) !== userHash)
-            return queryConclusion(null, "PASSWORD_INCORRECT", null);
+            return new DbActionConclusion({ summaryOfQueryIfNotSuccess: "PASSWORD_INCORRECT" });
 
-        return queryConclusion(results[0], null, null);
+        return new DbActionConclusion({ results: results[0] });
     },
+
     async checkForPrimaryKeyInTable(key, value, table) {
-        let query = `SELECT * FROM ${table}
-        WHERE ${key}='${value}';`
-        let { results } = await queryTheDB(query);
-        if (results === null || results.length === 0)
-            return false;
-        return true;
+        let query = `SELECT * FROM ${table} WHERE ?=?;`
+        let { results, error } = await queryTheDB(query, [key, value]);
+        if (error)
+            return DbActionConclusion(null, null, error);
+        return (results === null || results.length === 0);
     },
-    async getAllRelevantUserFields() {
-        let fieldsQuery = `SHOW FULL COLUMNS FROM users.info;`;
-        let { results: columnsData, error } = await queryTheDB(fieldsQuery);
-        let relevantFields = columnsData.filter(column => column.Comment != "");
-        return results;
-    },
-    async validateInput(data) {
 
-    }
-    // userFields
-    // genderValues
+    async getValuesForFieldInTable(field, table) {
+        let query = `SELECT ?? FROM ${table}`;
+        let { results, error } = await queryTheDB(query, [field]);
+        if (error)
+            return DbActionConclusion(null, null, error);
+        return results.map(rowDataPacket => rowDataPacket[field]);
+    },
+
+    async getUserInputFieldsForTable(table) {
+        let query = `SHOW FULL COLUMNS FROM ${table};`;
+        let { results, error } = await queryTheDB(query);
+        if (error)
+            return DbActionConclusion(null, null, error);
+        return results.filter(column => column.Comment === "input").map(column => column["Field"]);
+    },
+
 });
 
 
 //change data queries
 Object.assign(module.exports, {
     async addUser(data) {
-        let fields = Object.keys(data);
-        let values = Object.values(data);
+        let enteredKeys = Object.keys(data);
+        let enteredValues = Object.values(data);
 
-        let passIndex = fields.indexOf("password");
+        //test keys
+        let inputFields = await getUserInputFieldsForTable("info");
+        let areKeysValid = keyValidation(enteredKeys, inputFields.push("password"));
+        if (!areKeysValid)
+            return DbActionConclusion({ keyValidation: false });
 
+        //test values
+        let testResults = [];
+        enteredKeys.forEach(field, index => {
+            testResults.push(getTestForFieldName(field)(enteredValues[index]));
+        });
+
+        //gen hash
+        let passIndex = enteredKeys.indexOf("password");
         let salt = genSalt();
-        let hash = genHash(values[passIndex] + salt);
+        let hash = genHash(enteredValues[passIndex] + salt);
+        enteredKeys.splice(passIndex, 1, "salt", "hash");
+        enteredValues.splice(passIndex, 1, salt, hash);
 
-        fields.splice(passIndex, 1, "salt", "hash");
-        values.splice(passIndex, 1, salt, hash);
+        //gen query
+        let dynamicParameterPlaceholders = "?,".repeat(enteredKeys.length).slice(0, -1);
+        let query = `INSERT INTO info (${dynamicParameterPlaceholders}) 
+                            VALUES (${dynamicParameterPlaceholders})`;
 
-        let addUserQuery = `INSERT INTO info (${fields}) 
-                            VALUES (${wrapArrInChar(values)})`;
-
-        console.log(addUserQuery);
+        console.log(query);
         //await queryTheDB()
     }
 });
@@ -79,7 +109,7 @@ Object.assign(module.exports, {
 
 (async function testQueriesDev() {
     // // console.log(await queryTheDB("asdfas"));
-    // console.log(await module.exports.authenticateUser("yochai", ".azdfasd"));
+    //console.log(await module.exports.authenticateUser({ username: "yochai", password: ".azdfasd" }));
 
     // // console.log(`0:${await module.exports.checkIfGenderExists(0)}`);
     // // console.log(`1:${await module.exports.checkIfGenderExists(1)}`);
@@ -89,14 +119,14 @@ Object.assign(module.exports, {
     //     arr.push({key,value});
     // }));
     //module.exports.addUser({ x: 1, y: 2, password: "donaldDuck" });
-    module.exports.getAllRelevantUserFields();
+    //module.exports.getAllRelevantUserFields();
+    console.log(module.exports.getValuesForFieldInTable("gender_id", "static_gender"));
 })();
 
 
 
 
-
-async function queryTheDB(sqlQuery) {
+async function queryTheDB(parametrisedSqlQuery, parametersInOrder = []) {
     let queryDesc = {
         results: null,
         error: null
@@ -108,7 +138,7 @@ async function queryTheDB(sqlQuery) {
                     reject(connectionPoolError);
                     return;
                 }
-                connection.query(sqlQuery, (queryError, results) => {
+                connection.query(parametrisedSqlQuery, parametersInOrder, (queryError, results) => {
                     connection.release();
                     (queryError) ? reject(queryError) : resolve(results);
                 });
@@ -121,7 +151,7 @@ async function queryTheDB(sqlQuery) {
 }
 
 
-
+class DbException { }
 
 
 
