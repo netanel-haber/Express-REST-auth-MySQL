@@ -1,5 +1,3 @@
-let { getValuesForFieldInTable } = require('./users/db_queries');
-
 
 const RANGES = {
     username: { bottom: 6, top: 15 },
@@ -71,15 +69,12 @@ validation = {
             [...collectFlags(str, TEST_FOR.notNull, TEST_FOR.isString)];
         return new InputValidationSummary("password", raisedFlags.length === 0, raisedFlags);
     },
-    async gender(val) {
-        let raisedFlags;
-        try {
-            raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
-                [...collectFlags([val, ...await getValuesForFieldInTable("gender_id", "static_gender")], TEST_FOR.allowedNumberRange), ...collectFlags(val, TEST_FOR.notInteger)] :
-                [...collectFlags(val, TEST_FOR.NaN)];
-            return new InputValidationSummary("gender", raisedFlags.length === 0, raisedFlags);
-        }
-        catch (ex) { return new InputValidationSummary("gender", false, ["FATAL ERROR" + ex.toString]); }
+    async gender_id(val) {
+        let { getValuesForFieldInTable } = require("./users/db_queries");
+        let raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
+            [...collectFlags([val, ...await getValuesForFieldInTable("gender_id", "static_gender")], TEST_FOR.allowedNumberRange), ...collectFlags(val, TEST_FOR.notInteger)] :
+            [...collectFlags(val, TEST_FOR.NaN)];
+        return new InputValidationSummary("gender", raisedFlags.length === 0, raisedFlags);
     },
     age(val) {
         let raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
@@ -108,11 +103,9 @@ class InputValidationSummary {
 
 Object.assign(module.exports, {
     getTestForFieldName(fieldName) {
-        let fieldNameWords = fieldName.split("_");
         for (let type of Object.keys(validation))
-            for (let word of fieldNameWords)
-                if (type === word)
-                    return validation[type];
+            if (fieldName.includes(type))
+                return validation[type];
     },
     keyValidation(enteredKeys, properKeys, crossReference = false) {
         let result = true;
@@ -121,7 +114,7 @@ Object.assign(module.exports, {
         });
         if (crossReference) {
             properKeys.forEach(key => {
-                if (enteredKeys.indexOf(key) !== -1) result = false;
+                if (enteredKeys.indexOf(key) === -1) result = false;
             });
         }
         return result;
@@ -130,5 +123,5 @@ Object.assign(module.exports, {
 
 
 
-let f = (validation.gender(3));
+//let f = (validation.gender(3));
 // console.log(f);

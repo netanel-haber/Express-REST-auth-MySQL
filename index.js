@@ -1,7 +1,7 @@
 const port = 3000;
 const express = require('express');
 const bodyParser = require('body-parser');
-const queries = require('./users/db_queries');
+const {addUser} = require('./users/db_queries');
 
 const app = express();
 
@@ -23,6 +23,26 @@ app.get('/user/:userId/details', (req, res) => {
     //     res.send(responseObj);
 });
 
+(async function testQueriesDev() {
+    // // console.log(await queryTheDB("asdfas"));
+    //console.log(await module.exports.authenticateUser({ username: "yochai", password: ".azdfasd" }));
+
+    // let arr =[];
+    // console.log(JSON.stringify({x:"y", y:"x"},(_,key,value)=>{
+    //     arr.push({key,value});
+    // }));
+    //module.exports.addUser({ x: 1, y: 2, password: "donaldDuck" });
+    //module.exports.getAllRelevantUserFields();
+    try {
+        //await module.exports.getValuesForFieldInTable("gender_id", "static_gender");
+       let g =9; //return await module.exports.authenticateUser({ username: "yochai", password: "kkkzdfasd" });
+        await addUser({ username: "malchiel", password: "elmlagchid", first_name: "Ffff", last_name: "Ruchi",  age: 23, gender_id: 0, });
+    }
+
+    catch (ex) {
+        console.log("sdf");
+    }
+})();
 
 app.post('/user/details/add', (req, res) => {
     const userDetails = req.body;

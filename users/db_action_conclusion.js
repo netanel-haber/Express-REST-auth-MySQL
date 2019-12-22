@@ -1,9 +1,11 @@
 module.exports.DbActionConclusion = class {
-    constructor({ results = null,
+    constructor({
+        results = null,
         summaryOfQueryIfNotSuccess = null,
         failedError = null,
         keyValidation = true,
-        inputValidationSummaries = null }) {
+        inputValidationSummaries = null
+    }) {
         return {
             inputValidationGateway: { keyValidation: keyValidation, valueValidation: inputValidationSummaries },
             queryDescription: {
