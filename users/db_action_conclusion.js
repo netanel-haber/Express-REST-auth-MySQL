@@ -3,16 +3,16 @@ module.exports.DbActionConclusion = class {
         results = null,
         summaryOfQueryIfNotSuccess = null,
         failedError = null,
-        keyValidation = true,
+        invalidKeys = null,
         inputValidationSummaries = null
     }) {
         return {
-            inputValidationGateway: { keyValidation: keyValidation, valueValidation: inputValidationSummaries },
-            queryDescription: {
-                results: results,
-                summaryOfQueryIfNotSuccess: summaryOfQueryIfNotSuccess,
-                failedError: failedError
-            }
-        };
-    }
+            results: results,
+            keyValidation: invalidKeys,
+            valueValidation: inputValidationSummaries,
+            summaryOfQueryIfNotSuccess: summaryOfQueryIfNotSuccess,
+            failedError: failedError
+        }
+    };
 }
+

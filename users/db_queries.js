@@ -43,7 +43,6 @@ Object.assign(module.exports, {
     async getValuesForFieldInTable(field, table) {
         let query = `SELECT ?? FROM ${table}`;
         let results = await queryTheDB(query, [field]);
-        console.log(results);
         return results.map(rowDataPacket => rowDataPacket[field]);
     }
 });
@@ -53,10 +52,10 @@ Object.assign(module.exports, {
     async addUser(data) {
         let keys = Object.keys(data), values = Object.values(data);
         let inputKeys = await getUserInputFieldsForTable("info");
-        inputKeys.push("password");
+        inputKeys.splice(1, 0, "password");
 
         //test keys
-        let kCheck =keysCheck(keys, inputKeys.filter(value => { return (value != "hash") && (value != "salt"); }), true);
+        let kCheck = keysCheck(keys, inputKeys.concat());
         if (kCheck !== null) return kCheck;
 
         //test values
@@ -72,31 +71,28 @@ Object.assign(module.exports, {
         let passIndex = keys.indexOf("password");
         let salt = genSalt();
         let hash = genHash(values[passIndex] + salt);
-        keys.push("salt", "hash"); values.push(salt, hash);
 
-        let orderedData = reorderData(keys, values, inputKeys);
-        keys = Object.keys(orderedData), values = Object.values(orderedData);
+        keys.splice(passIndex, 1, "salt", "hash"); values.splice(passIndex, 1, salt, hash);
 
-        values[saltIndex] = salt, values[hashIndex] = hash;
+        inputKeys.splice(1, 1, "salt", "hash");
+
 
         //gen query
         let dynamicKeyPlaceholders = "??,".repeat(keys.length).slice(0, -1);
         let dynamicValuePlaceholders = "?,".repeat(keys.length).slice(0, -1);
         let query = `INSERT INTO info (${dynamicKeyPlaceholders}) VALUES (${dynamicValuePlaceholders})`;
 
-        let results = await queryTheDB(query, [...keys, ...values]);
-        console.log(g);
-        //await queryTheDB()
+        let orderedMap = reorderData(keys, values, inputKeys);
+        let results = await queryTheDB(query, [...orderedMap.keys(), ...orderedMap.values()]);
+        return new DbActionConclusion({ results: results });
     }
 });
 
 
 
-function keysCheck(enteredKeys, properKeys, crossReference = false) {
-    let areKeysValid = keyValidation(enteredKeys, properKeys, crossReference);
-    if (!areKeysValid)
-        return new DbActionConclusion({ keyValidation: false });
-    return null;
+function keysCheck(enteredKeys, properKeys) {
+    let invalidKeys = keyValidation(enteredKeys, properKeys);
+    return invalidKeys ? new DbActionConclusion({ keyValidation: invalidKeys }) : null;
 }
 
 async function valuesCheck(keys, values) {
@@ -112,11 +108,7 @@ async function valuesCheck(keys, values) {
 }
 
 function reorderData(jumbledKeys, jumbledValues, realKeyOrder) {
-    let result = {};
-    realKeyOrder.forEach(key => {
-        result[key] = jumbledValues[jumbledKeys.indexOf[key]];
-    });
-    return result;
+    return new Map(realKeyOrder.map(key => [key, jumbledValues[jumbledKeys.indexOf(key)]]));
 }
 
 
@@ -130,7 +122,7 @@ async function checkForPrimaryKeyInTable(key, value, table) {
 async function getUserInputFieldsForTable(table) {
     let query = `SHOW FULL COLUMNS FROM ${table};`;
     let results = await queryTheDB(query);
-    return results.filter(column => column.Comment !== "not_input").map(column => column["Field"]);
+    return results.filter(column => column.Comment === "input").map(column => column["Field"]);
 }
 
 async function queryTheDB(parametrisedSqlQuery, parametersInOrder = []) {

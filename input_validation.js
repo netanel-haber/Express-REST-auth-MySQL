@@ -53,34 +53,34 @@ validation = {
             [...collectFlags(str, TEST_FOR.notEmpty, TEST_FOR.noWhitespace, TEST_FOR.onlyLetters, TEST_FOR.exceptFirstAllLowerCase),
             ...collectFlags([str, RANGES.name.bottom, RANGES.name.top], TEST_FOR.allowedStringRange)] :
             [...collectFlags(str, TEST_FOR.notNull, TEST_FOR.isString)]
-        return new InputValidationSummary("name", raisedFlags.length === 0, raisedFlags);
+        return new InputValidationSummary("name: " + str, raisedFlags.length === 0, raisedFlags);
     },
     username(str) {
         let raisedFlags = !FATAL_INPUT_FOR_STRING(str) ?
             [...collectFlags(str, TEST_FOR.notEmpty, TEST_FOR.noWhitespace, TEST_FOR.onlyLettersNumbersAndUnderScore),
             ...collectFlags([str, RANGES.username.bottom, RANGES.username.top], TEST_FOR.allowedStringRange)] :
             [...collectFlags(str, TEST_FOR.notNull, TEST_FOR.isString)];
-        return new InputValidationSummary("userName", raisedFlags.length === 0, raisedFlags);
+        return new InputValidationSummary("username: " + str, raisedFlags.length === 0, raisedFlags);
     },
     password(str) {
         let raisedFlags = !FATAL_INPUT_FOR_STRING(str) ?
             [...collectFlags(str, TEST_FOR.notEmpty, TEST_FOR.noWhitespace, TEST_FOR.onlyLettersNumbersAndUnderScore),
             ...collectFlags([str, RANGES.password.bottom, RANGES.password.top], TEST_FOR.allowedStringRange)] :
             [...collectFlags(str, TEST_FOR.notNull, TEST_FOR.isString)];
-        return new InputValidationSummary("password", raisedFlags.length === 0, raisedFlags);
+        return new InputValidationSummary("password: " + str, raisedFlags.length === 0, raisedFlags);
     },
     async gender_id(val) {
         let { getValuesForFieldInTable } = require("./users/db_queries");
         let raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
             [...collectFlags([val, ...await getValuesForFieldInTable("gender_id", "static_gender")], TEST_FOR.allowedNumberRange), ...collectFlags(val, TEST_FOR.notInteger)] :
             [...collectFlags(val, TEST_FOR.NaN)];
-        return new InputValidationSummary("gender", raisedFlags.length === 0, raisedFlags);
+        return new InputValidationSummary("gender_id: " + val, raisedFlags.length === 0, raisedFlags);
     },
     age(val) {
         let raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
             [...collectFlags([val, RANGES.age.bottom, RANGES.age.top]), ...collectFlags(val, TEST_FOR.notInteger)] :
             [...collectFlags(val, TEST_FOR.NaN)];
-        return new InputValidationSummary("age", raisedFlags.length === 0, raisedFlags);
+        return new InputValidationSummary("age: " + val, raisedFlags.length === 0, raisedFlags);
     }
 };
 
@@ -103,21 +103,14 @@ class InputValidationSummary {
 
 Object.assign(module.exports, {
     getTestForFieldName(fieldName) {
-        for (let type of Object.keys(validation))
-            if (fieldName.includes(type))
-                return validation[type];
+        return validation[fieldName] ? validation[fieldName] : validation[Object.keys(validation).filter(test => fieldName.includes(test))[0]];
     },
-    keyValidation(enteredKeys, properKeys, crossReference = false) {
-        let result = true;
+    keyValidation(enteredKeys, properKeys) {
+        let results = [];
         enteredKeys.forEach(key => {
-            if (properKeys.indexOf(key) === -1) result = false;
+            if (properKeys.indexOf(key) === -1) results.push(key);
         });
-        if (crossReference) {
-            properKeys.forEach(key => {
-                if (enteredKeys.indexOf(key) === -1) result = false;
-            });
-        }
-        return result;
+        return results.length>0?results:null;
     }
 });
 
