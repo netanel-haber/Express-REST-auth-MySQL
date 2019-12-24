@@ -1,17 +1,17 @@
 module.exports.DbActionConclusion = class {
     constructor({
-        results = null,
+        bottomLine = false,
+        relevantResults = null,
         summaryOfQueryIfNotSuccess = null,
-        failedError = null,
         invalidKeys = null,
-        inputValidationSummaries = null
+        invalidValues = null
     }) {
         return {
-            results: results,
-            keyValidation: invalidKeys,
-            valueValidation: inputValidationSummaries,
+            bottomLine: bottomLine,
+            relevantResults: relevantResults,
+            invalidKeys: invalidKeys,
+            invalidValues: invalidValues,
             summaryOfQueryIfNotSuccess: summaryOfQueryIfNotSuccess,
-            failedError: failedError
         }
     };
 }
