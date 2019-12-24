@@ -4,6 +4,7 @@ const { DbActionConclusion } = require('./db_action_conclusion');
 const { keyValidation, valueValidation } = require('../input_validation');
 
 
+
 const conPool = mysql.createPool({
     connectionLimit: 10,
     host: 'db-users.chitjct3ipsw.us-east-2.rds.amazonaws.com',
@@ -12,8 +13,14 @@ const conPool = mysql.createPool({
     database: 'users'
 });
 
-module.exports.INSERT = { addUser };
-module.exports.SELECT = { getValuesForFieldInTable, authenticateUser };
+
+Object.assign(module.exports, {
+    INSERT: { addUser },
+    SELECT: { getValuesForFieldInTable, authenticateUser },
+    JWT: { setJWT, getJWT, delJWT }
+});
+
+
 
 
 
@@ -59,7 +66,7 @@ async function authenticateUser(data) {
 
     let inputValidation = await validateKeysAndValues(keys, values, inputKeys);
     if (inputValidation.invalidKeys || inputValidation.invalidValues)
-        return new DbActionConclusion({summaryOfQueryIfNotSuccess: "USER_NOT_FOUND"});
+        return new DbActionConclusion({ summaryOfQueryIfNotSuccess: "USER_NOT_FOUND" });
 
     let query = `SELECT * FROM info
         WHERE username=?;`;
@@ -69,8 +76,12 @@ async function authenticateUser(data) {
     if (genHash(data["password"] + salt) !== userHash)
         return new DbActionConclusion({ summaryOfQueryIfNotSuccess: "PASSWORD_INCORRECT" });
 
-    return new DbActionConclusion({ bottomLine:true, relevantResults: results });
+    return new DbActionConclusion({ bottomLine: true, relevantResults: results });
 }
+
+
+
+
 async function checkForPrimaryKeyInTable(key, value, table) {
     let query = `SELECT * FROM ${table} WHERE ??=?;`
     let results = await queryTheDB(query, [key, value]);
@@ -120,6 +131,42 @@ async function queryTheDB(parametrisedSqlQuery, parametersInOrder = []) {
         throw ex;
     }
 }
+
+
+
+async function setJWT(token, username) {
+    let query = `INSERT INTO jwt_user_map (jwt, username) VALUES (?, ?);`;
+    await queryTheDB(query, [token, username]);
+    return new DbActionConclusion({ bottomLine: true });
+}
+
+async function getJWT(token) {
+    let query = `SELECT * FROM jwt_user_map WHERE jwt=?;`;
+    let results = await queryTheDB(query, [token]);
+    return new DbActionConclusion(
+        results.length > 0 ?
+            { bottomLine: true, result: results[0].username } :
+            { summaryOfQueryIfNotSuccess: "TOKEN_NOT_FOUND" });
+}
+
+async function delJWT(token) {
+    let query = `DELETE FROM jwt_user_map WHERE jwt=?;`;
+    let result = await queryTheDB(query, [token]);
+    return new DbActionConclusion(
+        result.affectedRows > 0 ?
+            { bottomLine: true } :
+            { summaryOfQueryIfNotSuccess: "TOKEN_NOT_FOUND" });
+}
+
+
+(async function testQueriesDev() {
+    console.log(
+        await setJWT("erfefs", "malllchiel"), "---",
+        await getJWT("erfefs"), "---",
+        await delJWT("erfefs")
+        //await authenticateUser({ username: "Kkkkldkfj", password: "fffffffff" })
+    );
+})();
 
 
 
