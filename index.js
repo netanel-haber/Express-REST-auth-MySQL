@@ -23,16 +23,18 @@ app.post('/user/add', async (req, res) => {
 
 app.post('/user/changePassword', extractToken, async (req, res) => {
     let result;
-    if (decoded = await jwtVerificationWrapper(req).catch((err) => {
+    if (typeof (decoded = await jwtVerificationWrapper(req).catch((err) => {
         statusCode = 403;
         result = new apiActionConclusion({ summaryOfQueryIfNotSuccess: err });
-    }))
+    })) !== undefined)
         ({ statusCode, result } = await apiWrapper(changePassword, Object.assign({ username: decoded.username }, req.body)));
 
     res.status(statusCode).json(result);
 });
 
+app.post('/user/updateInfo', extractToken, async (req, res) => {
 
+});
 
 app.post('/user/login', async (req, res) => {
     const userDetails = req.body;
@@ -71,8 +73,6 @@ async function apiWrapper(action, data) {
     console.log(`${message}\n---\n`);
     return { statusCode: statusCode, result };
 }
-
-
 
 
 
