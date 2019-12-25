@@ -1,8 +1,7 @@
 const mysql = require('mysql');
-const { genHash, genSalt } = require('./hash_salt_jwt');
-const { DbActionConclusion } = require('./db_action_conclusion');
+const { genHash, genSalt } = require('./hash_salt');
+const { apiActionConclusion } = require('./db_action_conclusion');
 const { keyValidation, valueValidation } = require('../input_validation');
-
 
 
 const conPool = mysql.createPool({
@@ -17,10 +16,16 @@ const conPool = mysql.createPool({
 Object.assign(module.exports, {
     INSERT: { addUser },
     SELECT: { getValuesForFieldInTable, authenticateUser },
-    JWT: { setJWT, getJWT, delJWT }
+    UPDATE: { changePassword }
 });
 
-
+const Messages = {
+    userExists: "USER_ALREADY_EXISTS",
+    invalidValues: "INVALID_VALUES",
+    invalidKeys: "INVALID_KEYS",
+    userNotFound: "USER_NOT_FOUND",
+    passIncorrect: "PASSWORD_INCORRECT"
+};
 
 async function addUser(data) {
     let keys = Object.keys(data), values = Object.values(data);
@@ -29,11 +34,11 @@ async function addUser(data) {
 
     let inputValidation = await validateKeysAndValues(keys, values, inputKeys);
     if (inputValidation.invalidKeys || inputValidation.invalidValues)
-        return new DbActionConclusion(Object.assign({}, inputValidation));
+        return new apiActionConclusion(Object.assign({}, inputValidation));
 
     //check if username exists already
     if (!await checkForPrimaryKeyInTable("username", data["username"], "info"))
-        return new DbActionConclusion({ summaryOfQueryIfNotSuccess: "USER_ALREADY_EXISTS" });
+        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.userExists });
 
     //gen hash
     let passIndex = keys.indexOf("password");
@@ -52,10 +57,8 @@ async function addUser(data) {
     let orderedMap = reorderData(keys, values, inputKeys);
 
     await queryTheDB(query, [...orderedMap.keys(), ...orderedMap.values()]);
-    return new DbActionConclusion({ bottomLine: true });
+    return new apiActionConclusion({ bottomLine: true });
 }
-
-
 
 async function authenticateUser(data) {
     let keys = Object.keys(data), values = Object.values(data);
@@ -63,20 +66,35 @@ async function authenticateUser(data) {
 
     let inputValidation = await validateKeysAndValues(keys, values, inputKeys);
     if (inputValidation.invalidKeys || inputValidation.invalidValues)
-        return new DbActionConclusion({ summaryOfQueryIfNotSuccess: "USER_NOT_FOUND" });
+        return new apiActionConclusion(Object.assign({}, inputValidation));
 
     let query = `SELECT * FROM info
         WHERE username=?;`;
     let results = (await queryTheDB(query, [data.username]));
-    if (!results.length) return new DbActionConclusion({ summaryOfQueryIfNotSuccess: "USER_NOT_FOUND" });
+    if (!results.length) return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.userNotFound });
     let { hash: userHash, salt: salt } = results[0];
     if (genHash(data["password"] + salt) !== userHash)
-        return new DbActionConclusion({ summaryOfQueryIfNotSuccess: "PASSWORD_INCORRECT" });
+        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.passIncorrect });
 
-    return new DbActionConclusion({ bottomLine: true, relevantResults: results });
+    return new apiActionConclusion({ relevantResults: results });
 }
 
 
+async function changePassword(data) {
+    let keys = Object.keys(data), values = Object.values(data);
+    let inputKeys = ["username", "new_password"];
+    let inputValidation = await validateKeysAndValues(keys, values, inputKeys);
+    if (inputValidation.invalidKeys || inputValidation.invalidValues)
+        return new apiActionConclusion(Object.assign({}, inputValidation));
+
+    let salt = genSalt();
+    let hash = genHash(data.new_password + salt);
+    let query = `UPDATE ?? SET ?? = ?, ?? = ?
+    WHERE ??=?`;
+    await queryTheDB(query, ["info", "salt", salt, "hash", hash, "username", data.username]);
+    console.log(data.new_password, hash, salt, data.username);
+    return new apiActionConclusion({ bottomLine: true });
+}
 
 
 async function checkForPrimaryKeyInTable(key, value, table) {
@@ -95,15 +113,12 @@ async function getValuesForFieldInTable(field, table) {
     return results.map(rowDataPacket => rowDataPacket[field]);
 }
 
-
-
 async function validateKeysAndValues(enteredKeys, enteredValues, actualKeys) {
     let accumulatedDbInfo = {};
     accumulatedDbInfo.invalidKeys = keyValidation(enteredKeys, actualKeys);
     accumulatedDbInfo.invalidValues = await valueValidation(enteredKeys, enteredValues);
     return accumulatedDbInfo;
 }
-
 
 function reorderData(jumbledKeys, jumbledValues, realKeyOrder) {
     return new Map(realKeyOrder.map(key => [key, jumbledValues[jumbledKeys.indexOf(key)]]));
@@ -117,7 +132,8 @@ async function queryTheDB(parametrisedSqlQuery, parametersInOrder = []) {
                 if (connectionPoolError) {
                     throw connectionPoolError;
                 }
-                connection.query(parametrisedSqlQuery, parametersInOrder, (queryError, results) => {
+                let formattedQuery = mysql.format(parametrisedSqlQuery, parametersInOrder);
+                connection.query(formattedQuery, (queryError, results) => {
                     connection.release();
                     if (queryError) throw queryError;
                     else resolve(results);
@@ -131,29 +147,7 @@ async function queryTheDB(parametrisedSqlQuery, parametersInOrder = []) {
 
 
 
-async function setJWT(token, username) {
-    let query = `INSERT INTO jwt_user_map (jwt, username) VALUES (?, ?);`;
-    await queryTheDB(query, [token, username]);
-    return new DbActionConclusion({ bottomLine: true });
-}
 
-async function getJWT(token) {
-    let query = `SELECT * FROM jwt_user_map WHERE jwt=?;`;
-    let results = await queryTheDB(query, [token]);
-    return new DbActionConclusion(
-        results.length > 0 ?
-            { bottomLine: true, result: results[0].username } :
-            { summaryOfQueryIfNotSuccess: "TOKEN_NOT_FOUND" });
-}
-
-async function delJWT(token) {
-    let query = `DELETE FROM jwt_user_map WHERE jwt=?;`;
-    let result = await queryTheDB(query, [token]);
-    return new DbActionConclusion(
-        result.affectedRows > 0 ?
-            { bottomLine: true } :
-            { summaryOfQueryIfNotSuccess: "TOKEN_NOT_FOUND" });
-}
 
 
 // (async function testQueriesDev() {

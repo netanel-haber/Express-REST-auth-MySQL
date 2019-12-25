@@ -127,7 +127,7 @@ async function valueValidation(keys, values) {
         let test = getTestForFieldName(field);
         if (test) {
             let result = await test(values[index]);
-            if (result!==null)
+            if (result !== null)
                 failedHighLevelTests.push(result);
         }
     });

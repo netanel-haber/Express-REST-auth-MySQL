@@ -2,9 +2,12 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const jwt = require('jsonwebtoken');
 
-const { INSERT, SELECT, JWT } = require('./users/db_queries');
-const { genJwt } = require('./users/hash_salt_jwt');
-
+const {
+    INSERT: { addUser },
+    SELECT: { getValuesForFieldInTable, authenticateUser },
+    UPDATE: { changePassword } } = require('./users/db_queries');
+const { apiActionConclusion } = require('./users/db_action_conclusion');
+const { jwtVerificationWrapper, genJwt, extractToken } = require('./jwt');
 
 const port = 3000;
 const app = express();
@@ -12,65 +15,69 @@ app.use(bodyParser.json());
 
 
 app.post('/user/add', async (req, res) => {
-    console.log("attempting to add user...");
     const userDetails = req.body;
-    let { resCode, stringifiedResult } = await apiWrapper(INSERT.addUser, userDetails);
-    console.log("user added succesfully.");
-    res.statusCode = resCode;
-    res.send(stringifiedResult);
+    let { statusCode, result } = await apiWrapper(addUser, userDetails);
+    res.status(statusCode).json(result);
 });
+
+
+app.post('/user/changePassword', extractToken, async (req, res) => {
+    let result;
+    if (decoded = await jwtVerificationWrapper(req).catch((err) => {
+        statusCode = 403;
+        result = new apiActionConclusion({ summaryOfQueryIfNotSuccess: err });
+    }))
+        ({ statusCode, result } = await apiWrapper(changePassword, Object.assign({ username: decoded.username }, req.body)));
+
+    res.status(statusCode).json(result);
+});
+
 
 
 app.post('/user/login', async (req, res) => {
-
     const userDetails = req.body;
     let { username } = userDetails;
-
-    //authenticate
-    let { resCode, stringifiedResult } = await apiWrapper(SELECT.authenticateUser, userDetails);
-    if (resCode !== 200) {
-        res.statusCode = resCode;
-        res.send(stringifiedResult);
+    let { statusCode, result } = await apiWrapper(authenticateUser, userDetails);
+    if (statusCode !== 200) {
+        res.status(statusCode).json(result);
         return;
     }
-
-    //authorize
-    let result = await apiWrapper(genJwt, { username, expiresIn: '30s' })
-    await apiWrapper(jwt)
-
-    res.statusCode = result.resCode;
-    res.send(result.stringifiedResult);
+    token = await genJwt(username, '30s').catch(err => {
+        statusCode = 500;
+        result = null;
+    });
+    if (token) result = new apiActionConclusion({ relevantResults: token });
+    res.status(statusCode).json(result);
 });
 
 
-
-
-
 async function apiWrapper(action, data) {
-    console.log(`--- attempting to ${action.name}. ---`);
-    let log = `--- attempt to ${action.name} was successful ---`;
-
-    let resCode = 200;
+    console.log(`\n---\nattempting to ${action.name}\n`);
+    let message = `attempt to ${action.name} was successful`;
+    let statusCode = 200;
     let result;
     try {
         result = await action(data);
         if (!result.bottomLine) {
-            resCode = 403;
-            log = `--- attempt to ${action.name} was unsuccessful. client error. ${result.summaryOfQueryIfNotSuccess}. ---`
+            statusCode = 403;
+            message = `attempt to ${action.name} was unsuccessful. client error. ${result.summaryOfQueryIfNotSuccess}.`
         }
     }
     catch (ex) {
-        resCode = 500;
+        statusCode = 500;
         result = null;
-
-        log = `--- attempt to ${action.name} was unsuccessful. server error. ${JSON.stringify(ex)}. ---`;
+        message = `--- attempt to ${action.name} was unsuccessful. server error. ${JSON.stringify(ex)}. ---`;
     }
-    let stringifiedResult = JSON.stringify(result);
-    console.log(log);
-    return { resCode, stringifiedResult };
+    console.log(`${message}\n---\n`);
+    return { statusCode: statusCode, result };
 }
+
+
+
 
 
 app.listen(port, () => {
     console.log(`The server is running on port ${port}`);
 });
+
+

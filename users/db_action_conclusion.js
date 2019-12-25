@@ -1,4 +1,4 @@
-module.exports.DbActionConclusion = class {
+module.exports.apiActionConclusion = class {
     constructor({
         bottomLine = false,
         relevantResults = null,
@@ -7,7 +7,7 @@ module.exports.DbActionConclusion = class {
         invalidValues = null
     }) {
         return {
-            bottomLine: bottomLine,
+            bottomLine: relevantResults !== null || bottomLine,
             relevantResults: relevantResults,
             invalidKeys: invalidKeys,
             invalidValues: invalidValues,
