@@ -1,5 +1,5 @@
 const mysql = require('mysql');
-const { genHash, genSalt } = require('./hash_and_salt');
+const { genHash, genSalt } = require('./hash_salt_jwt');
 const { DbActionConclusion } = require('./db_action_conclusion');
 const { keyValidation, valueValidation } = require('../input_validation');
 
@@ -19,9 +19,6 @@ Object.assign(module.exports, {
     SELECT: { getValuesForFieldInTable, authenticateUser },
     JWT: { setJWT, getJWT, delJWT }
 });
-
-
-
 
 
 
@@ -159,14 +156,14 @@ async function delJWT(token) {
 }
 
 
-(async function testQueriesDev() {
-    console.log(
-        await setJWT("erfefs", "malllchiel"), "---",
-        await getJWT("erfefs"), "---",
-        await delJWT("erfefs")
-        //await authenticateUser({ username: "Kkkkldkfj", password: "fffffffff" })
-    );
-})();
+// (async function testQueriesDev() {
+//     console.log(
+//         await setJWT("erfefs", "malllchiel"), "---",
+//         await getJWT("erfefs"), "---",
+//         await delJWT("erfefs")
+//         //await authenticateUser({ username: "Kkkkldkfj", password: "fffffffff" })
+//     );
+// })();
 
 
 
