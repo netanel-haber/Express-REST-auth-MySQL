@@ -27,7 +27,7 @@ function jwtVerificationWrapper(req) {
             (err) ?
                 rej(err.name === "TokenExpiredError" ?
                     messageIfTokenExpired : defaultMessage) :
-                res(decoded);
+                res(decoded);           
         });
     });
 }

@@ -114,15 +114,20 @@ function getTestForFieldName(fieldName) {
 }
 
 function keyValidation(enteredKeys, properKeys) {
+    let time = Date.now();
+    console.log(`   --- validating keys...`);
     let results = [];
     enteredKeys.forEach(key => {
         if (properKeys.indexOf(key) === -1) results.push(key);
     });
+    console.log(`   done validating keys. ${Date.now()-time}ms have passed ---`);
     return results.length > 0 ? results : null;
 }
 
 async function valueValidation(keys, values) {
     let failedHighLevelTests = [];
+    let time = Date.now();
+    console.log(`   --- validating values...`);
     await asyncForEach(keys, async (field, index) => {
         let test = getTestForFieldName(field);
         if (test) {
@@ -131,10 +136,11 @@ async function valueValidation(keys, values) {
                 failedHighLevelTests.push(result);
         }
     });
+    console.log(`   done validating values. ${Date.now()-time}ms have passed ---`);
     return failedHighLevelTests.length > 0 ? failedHighLevelTests : null;
 }
 
-async function validateKeysAndValues(enteredKeys, enteredValues, actualKeys) {
+async function validateKeysAndValues(enteredKeys, enteredValues, actualKeys) {   
     let accumulatedDbInfo = {};
     accumulatedDbInfo.invalidKeys = keyValidation(enteredKeys, actualKeys);
     accumulatedDbInfo.invalidValues = await valueValidation(enteredKeys, enteredValues);
