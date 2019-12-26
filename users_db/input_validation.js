@@ -5,7 +5,8 @@ const RANGES = {
     age: { bottom: 18, top: 100 }
 };
 
-const { asyncForEach } = require("./utilities");
+const { asyncForEach } = require("../utilities/utilities");
+const { apiActionConclusion } = require('../db_action_conclusion');
 
 const FATAL_INPUT_FOR_STRING = str => (str === null) || (str + "" !== str);
 const FATAL_INPUT_FOR_NUMBER = val => isNaN(val);
@@ -71,7 +72,7 @@ validation = {
         return (raisedFlags.length === 0) ? null : new InputValidationSummary("password: " + str, raisedFlags);
     },
     async gender_id(val) {
-        let { SELECT } = require("./users/db_queries");
+        let { SELECT } = require("./queries");
         let raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
             [...collectFlags([val, ...await SELECT.getValuesForFieldInTable("gender_id", "static_gender")], TEST_FOR.allowedNumberRange), ...collectFlags(val, TEST_FOR.notInteger)] :
             [...collectFlags(val, TEST_FOR.NaN)];
@@ -79,7 +80,7 @@ validation = {
     },
     age(val) {
         let raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
-            [...collectFlags([val, RANGES.age.bottom, RANGES.age.top]), ...collectFlags(val, TEST_FOR.notInteger)] :
+            [...collectFlags([val, RANGES.age.bottom, RANGES.age.top], TEST_FOR.allowedNumberRange), ...collectFlags(val, TEST_FOR.notInteger)] :
             [...collectFlags(val, TEST_FOR.NaN)];
         return (raisedFlags.length === 0) ? null : new InputValidationSummary("age: " + val, raisedFlags);
     }
@@ -134,7 +135,35 @@ async function valueValidation(keys, values) {
     return failedHighLevelTests.length > 0 ? failedHighLevelTests : null;
 }
 
+async function validateKeysAndValues(enteredKeys, enteredValues, actualKeys) {
+    let accumulatedDbInfo = {};
+    accumulatedDbInfo.invalidKeys = keyValidation(enteredKeys, actualKeys);
+    accumulatedDbInfo.invalidValues = await valueValidation(enteredKeys, enteredValues);
+    return accumulatedDbInfo;
+}
 
-Object.assign(module.exports, { keyValidation, valueValidation });
+async function validateKeyValuePair(data) {
+    let key = Object.keys(data)[0];
+    let value = Object.values(data)[0];
+    let test = getTestForFieldName(key);
+    if (test) {
+        let result = await test(value);
+        if (!result)
+            result = [];
+    }
+    else
+        result = "";
+    return result;
+}
+
+async function valKeyValuePairWrapper() {
+    result = await validateKeyValuePair(data);
+    if (!result)
+        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.noTestForField });
+    return new apiActionConclusion({ relevantResults: result });
+}
+
+
+Object.assign(module.exports, { validateKeysAndValues, valKeyValuePairWrapper });
 
 

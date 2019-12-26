@@ -1,7 +1,4 @@
 let jwt = require("jsonwebtoken");
-let apiActionConclusion = require('./users/db_action_conclusion');
-
-
 
 Object.assign(module.exports, { jwtVerificationWrapper, genJwt, extractToken });
 
@@ -24,6 +21,7 @@ function jwtVerificationWrapper(req) {
     return new Promise((res, rej) => {
         if (typeof req.token === undefined) {
             rej(messageIfCannotExtractToken);
+            return;
         }
         jwt.verify(req.token, secretKey, (err, decoded) => {
             (err) ?

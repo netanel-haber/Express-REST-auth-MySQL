@@ -1,18 +1,17 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const jwt = require('jsonwebtoken');
 
 const {
     INSERT: { addUser },
-    SELECT: { getValuesForFieldInTable, authenticateUser },
-    UPDATE: { changePassword } } = require('./users/db_queries');
-const { apiActionConclusion } = require('./users/db_action_conclusion');
-const { jwtVerificationWrapper, genJwt, extractToken } = require('./jwt');
+    SELECT: { authenticateUser },
+    UPDATE: { changePassword, updateUserInfo } } = require('./users_db/queries');
+const { valKeyValuePairWrapper } = require('./users_db/input_validation');
+const { apiActionConclusion } = require('./db_action_conclusion');
+const { jwtVerificationWrapper, genJwt, extractToken } = require('./utilities/jwt');
 
 const port = 3000;
 const app = express();
 app.use(bodyParser.json());
-
 
 app.post('/user/add', async (req, res) => {
     const userDetails = req.body;
@@ -23,17 +22,28 @@ app.post('/user/add', async (req, res) => {
 
 app.post('/user/changePassword', extractToken, async (req, res) => {
     let result;
-    if (typeof (decoded = await jwtVerificationWrapper(req).catch((err) => {
+    let decoded = await jwtVerificationWrapper(req).catch((err) => {
         statusCode = 403;
         result = new apiActionConclusion({ summaryOfQueryIfNotSuccess: err });
-    })) !== undefined)
-        ({ statusCode, result } = await apiWrapper(changePassword, Object.assign({ username: decoded.username }, req.body)));
+    });
+
+    if (typeof decoded !== 'undefined')
+        ({ statusCode, result } = await apiWrapper(changePassword, { username: decoded.username, updatedColumns: req.body }));
 
     res.status(statusCode).json(result);
 });
 
 app.post('/user/updateInfo', extractToken, async (req, res) => {
+    let result;
+    let decoded = await jwtVerificationWrapper(req).catch((err) => {
+        statusCode = 403;
+        result = new apiActionConclusion({ summaryOfQueryIfNotSuccess: err });
+    });
 
+    if (typeof decoded !== 'undefined')
+        ({ statusCode, result } = await apiWrapper(updateUserInfo, { username: decoded.username, updatedColumns: req.body }));
+
+    res.status(statusCode).json(result);
 });
 
 app.post('/user/login', async (req, res) => {
@@ -52,12 +62,19 @@ app.post('/user/login', async (req, res) => {
     res.status(statusCode).json(result);
 });
 
+app.get('/api/validateSingleKeyValuePair', async (req, res) => {
+    const data = req.body;
+    let { statusCode, result } = await apiWrapper(valKeyValuePairWrapper, data);
+    res.status(statusCode).json(result);
+});
+
+
 
 async function apiWrapper(action, data) {
-    console.log(`\n---\nattempting to ${action.name}\n`);
+    console.log(`\n---\nattempting to ${action.name}...\n`);
     let message = `attempt to ${action.name} was successful`;
     let statusCode = 200;
-    let result;
+    let result = null;
     try {
         result = await action(data);
         if (!result.bottomLine) {
@@ -67,13 +84,11 @@ async function apiWrapper(action, data) {
     }
     catch (ex) {
         statusCode = 500;
-        result = null;
         message = `--- attempt to ${action.name} was unsuccessful. server error. ${JSON.stringify(ex)}. ---`;
     }
     console.log(`${message}\n---\n`);
     return { statusCode: statusCode, result };
 }
-
 
 
 app.listen(port, () => {

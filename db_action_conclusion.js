@@ -7,7 +7,7 @@ module.exports.apiActionConclusion = class {
         invalidValues = null
     }) {
         return {
-            bottomLine: relevantResults !== null || bottomLine,
+            bottomLine: bottomLine || relevantResults !== null,
             relevantResults: relevantResults,
             invalidKeys: invalidKeys,
             invalidValues: invalidValues,
