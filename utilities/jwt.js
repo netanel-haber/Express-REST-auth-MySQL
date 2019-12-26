@@ -2,7 +2,6 @@ let jwt = require("jsonwebtoken");
 
 Object.assign(module.exports, { jwtVerificationWrapper, genJwt, extractToken });
 
-
 const secretKey = "secretKey";
 function genJwt(username, expiresIn) {
     return new Promise((res, rej) => {
@@ -18,6 +17,7 @@ const messageIfCannotExtractToken = "CANNOT_EXTRACT_TOKEN";
 const messageIfTokenExpired = "TOKEN_EXPIRED";
 const defaultMessage = "INVALID_TOKEN";
 function jwtVerificationWrapper(req) {
+    console.log("verifying token...");
     return new Promise((res, rej) => {
         if (typeof req.token === undefined) {
             rej(messageIfCannotExtractToken);
@@ -33,11 +33,12 @@ function jwtVerificationWrapper(req) {
 }
 
 function extractToken(req, res, next) {
+    console.log("extracting token...");
     let bearerHeader = req.headers['authorization'];
     if (typeof bearerHeader !== 'undefined') {
         let bearer = bearerHeader.split(' ');
         let bearerToken = bearer[1];
-        req.token = bearerToken;
-        next();
+        req.token = bearerToken;        
     }
+    next();
 }

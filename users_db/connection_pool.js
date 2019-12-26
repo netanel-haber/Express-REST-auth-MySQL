@@ -1,5 +1,5 @@
 const mysql = require('mysql');
-module.exports.ConPool = mysql.createPool({
+let conPool = mysql.createPool({
     connectionLimit: 10,
     host: 'db-users.chitjct3ipsw.us-east-2.rds.amazonaws.com',
     user: 'admin',

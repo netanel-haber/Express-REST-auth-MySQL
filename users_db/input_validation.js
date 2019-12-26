@@ -102,7 +102,6 @@ class InputValidationSummary {
     }
 }
 
-
 function getTestForFieldName(fieldName) {
     let test;
     try {
@@ -156,11 +155,11 @@ async function validateKeyValuePair(data) {
     return result;
 }
 
-async function valKeyValuePairWrapper() {
+async function valKeyValuePairWrapper(data) {
     result = await validateKeyValuePair(data);
     if (!result)
         return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.noTestForField });
-    return new apiActionConclusion({ relevantResults: result });
+    return new apiActionConclusion({ relevantResults: result.length > 0 ? result : null });
 }
 
 

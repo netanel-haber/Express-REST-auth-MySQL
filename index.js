@@ -14,47 +14,33 @@ const app = express();
 app.use(bodyParser.json());
 
 app.post('/user/add', async (req, res) => {
-    const userDetails = req.body;
-    let { statusCode, result } = await apiWrapper(addUser, userDetails);
+    let { statusCode, result } = await executeAction(addUser, req.body);
     res.status(statusCode).json(result);
 });
 
-
 app.post('/user/changePassword', extractToken, async (req, res) => {
-    let result;
-    let decoded = await jwtVerificationWrapper(req).catch((err) => {
-        statusCode = 403;
-        result = new apiActionConclusion({ summaryOfQueryIfNotSuccess: err });
-    });
-
-    if (typeof decoded !== 'undefined')
-        ({ statusCode, result } = await apiWrapper(changePassword, { username: decoded.username, updatedColumns: req.body }));
-
+    let { statusCode, result } = await verifyTokenThenExecuteAction(req, changePassword, req.body);
     res.status(statusCode).json(result);
 });
 
 app.post('/user/updateInfo', extractToken, async (req, res) => {
-    let result;
-    let decoded = await jwtVerificationWrapper(req).catch((err) => {
-        statusCode = 403;
-        result = new apiActionConclusion({ summaryOfQueryIfNotSuccess: err });
-    });
-
-    if (typeof decoded !== 'undefined')
-        ({ statusCode, result } = await apiWrapper(updateUserInfo, { username: decoded.username, updatedColumns: req.body }));
-
+    let { statusCode, result } = await verifyTokenThenExecuteAction(req, updateUserInfo, req.body);
     res.status(statusCode).json(result);
 });
 
+
+const tokenExpirationString = "90s";
 app.post('/user/login', async (req, res) => {
     const userDetails = req.body;
-    let { username } = userDetails;
-    let { statusCode, result } = await apiWrapper(authenticateUser, userDetails);
+
+    let { statusCode, result } = await executeAction(authenticateUser, userDetails);
     if (statusCode !== 200) {
         res.status(statusCode).json(result);
         return;
     }
-    token = await genJwt(username, '30s').catch(err => {
+
+    let { username } = req.body;
+    token = await genJwt(username, tokenExpirationString).catch(() => {
         statusCode = 500;
         result = null;
     });
@@ -64,13 +50,24 @@ app.post('/user/login', async (req, res) => {
 
 app.get('/api/validateSingleKeyValuePair', async (req, res) => {
     const data = req.body;
-    let { statusCode, result } = await apiWrapper(valKeyValuePairWrapper, data);
+    let { statusCode, result } = await executeAction(valKeyValuePairWrapper, data);
     res.status(statusCode).json(result);
 });
 
 
 
-async function apiWrapper(action, data) {
+async function verifyTokenThenExecuteAction(req, action, data) {
+    let result;
+    let decoded = await jwtVerificationWrapper(req).catch((err) => {
+        statusCode = 403;
+        result = new apiActionConclusion({ summaryOfQueryIfNotSuccess: err });
+    });
+    if (typeof decoded !== 'undefined')
+        ({ statusCode, result } = await executeAction(action, { username: decoded.username, body: data }));
+    return { statusCode, result };
+}
+
+async function executeAction(action, data) {
     console.log(`\n---\nattempting to ${action.name}...\n`);
     let message = `attempt to ${action.name} was successful`;
     let statusCode = 200;

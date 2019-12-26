@@ -4,13 +4,13 @@ const { reorderKeyValuePairs } = require("../utilities/utilities");
 const { Messages } = require('../Messages');
 
 const { Tables } = require('./tables');
-const { validateKeysAndValues, validateKeyValuePair } = require('./input_validation');
+const { validateKeysAndValues } = require('./input_validation');
 const { queryTheDB } = require('./connection_pool');
 
 
 Object.assign(module.exports, {
     INSERT: { addUser },
-    SELECT: { getValuesForFieldInTable, authenticateUser, valKeyValuePair },
+    SELECT: { getValuesForFieldInTable, authenticateUser },
     UPDATE: { changePassword, updateUserInfo }
 });
 
@@ -51,6 +51,7 @@ async function addUser(data) {
 }
 
 async function authenticateUser(data) {
+
     let keys = Object.keys(data), values = Object.values(data);
     let inputKeys = ["username", "password"];
 
@@ -71,15 +72,15 @@ async function authenticateUser(data) {
 
 
 async function changePassword(data) {
-    let { username, updatedColumns } = data;
-    let keys = Object.keys(updatedColumns), values = Object.values(updatedColumns);
+    let { username, body } = data;
+    let keys = Object.keys(body), values = Object.values(body);
     let inputKeys = ["password"];
     let inputValidation = await validateKeysAndValues(keys, values, inputKeys);
     if (inputValidation.invalidKeys || inputValidation.invalidValues)
         return new apiActionConclusion(Object.assign({}, inputValidation));
 
     let salt = genSalt();
-    let hash = genHash(updatedColumns.password + salt);
+    let hash = genHash(body.password + salt);
     let query = `UPDATE ?? SET ?? = ?, ?? = ?
     WHERE ??=?`;
     await queryTheDB(query, [Tables.users, "salt", salt, "hash", hash, "username", username]);
@@ -87,13 +88,12 @@ async function changePassword(data) {
 }
 
 async function updateUserInfo(data) {
-    let { username, updatedColumns } = data;
-    let keys = Object.keys(updatedColumns), values = Object.values(updatedColumns);
+    let { username, body } = data;
+    let keys = Object.keys(body), values = Object.values(body);
     let inputKeys = await getUserInputFieldsForTable(Tables.users);
     let inputValidation = await validateKeysAndValues(keys, values, inputKeys);
     if (inputValidation.invalidKeys || inputValidation.invalidValues)
         return new apiActionConclusion(Object.assign({}, inputValidation));
-
 
     let dynamicPlaceholders = "?? = ?,".repeat(keys.length).slice(0, -1);
     let query = `UPDATE ?? SET ${dynamicPlaceholders}
