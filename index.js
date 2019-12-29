@@ -1,5 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const { MYSQL_PASSWORD, MYSQL_HOST, MYSQL_USERNAME } = require('./enVar');
+
 
 const {
     INSERT: { addUser },
@@ -74,7 +76,7 @@ async function executeAction(action, data) {
     let statusCode = 200;
     let result = null;
     try {
-        result = await action(data);        
+        result = await action(data);
         if (!result.bottomLine) {
             statusCode = 403;
             message = `attempt to ${action.name} was unsuccessful. client error. ${result.summaryOfQueryIfNotSuccess}.`
@@ -83,10 +85,10 @@ async function executeAction(action, data) {
     catch (ex) {
         statusCode = 500;
         message = `--- attempt to ${action.name} was unsuccessful. server error. ${JSON.stringify(ex)}. ---`;
-    }   
+    }
     console.log(`\n${message}\n`);
-    console.log(`${Date.now()-time}ms have passed\n---\n`);
-    
+    console.log(`${Date.now() - time}ms have passed\n---\n`);
+
     return { statusCode: statusCode, result };
 }
 
