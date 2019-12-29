@@ -65,7 +65,7 @@ async function verifyTokenThenExecuteAction(req, action, data) {
         result = new apiActionConclusion({ summaryOfQueryIfNotSuccess: err });
     });
     if (typeof decoded !== 'undefined')
-        ({ statusCode, result } = await executeAction(action, { username: decoded.username, body: data }));
+        ({ statusCode, result } = await executeAction(action, { username: decoded.username, data }));
     return { statusCode, result };
 }
 

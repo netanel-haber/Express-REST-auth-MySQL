@@ -6,18 +6,15 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.INTEGER(11),
       allowNull: false,
       primaryKey: true,
-      autoIncrement: true,
-      field: 'id'
+      autoIncrement: true
     },
     name: {
       type: DataTypes.STRING(1),
-      allowNull: false,
-      field: 'name'
+      allowNull: false
     },
     desc: {
       type: DataTypes.STRING(20),
-      allowNull: false,
-      field: 'desc'
+      allowNull: false
     }
   }, {
     tableName: 'genders'

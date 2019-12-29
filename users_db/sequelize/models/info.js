@@ -5,58 +5,48 @@ module.exports = function(sequelize, DataTypes) {
     username: {
       type: DataTypes.STRING(100),
       allowNull: false,
-      primaryKey: true,
-      field: 'username'
+      primaryKey: true
     },
     salt: {
       type: DataTypes.STRING(100),
-      allowNull: false,
-      field: 'salt'
+      allowNull: false
     },
     hash: {
       type: DataTypes.STRING(100),
-      allowNull: false,
-      field: 'hash'
+      allowNull: false
     },
-    firstName: {
+    first_name: {
       type: DataTypes.STRING(100),
-      allowNull: false,
-      field: 'first_name'
+      allowNull: false
     },
-    lastName: {
+    last_name: {
       type: DataTypes.STRING(100),
-      allowNull: false,
-      field: 'last_name'
+      allowNull: false
     },
     age: {
       type: DataTypes.INTEGER(11),
-      allowNull: false,
-      field: 'age'
+      allowNull: false
     },
-    genderId: {
+    gender_id: {
       type: DataTypes.INTEGER(11),
       allowNull: false,
       references: {
         model: 'genders',
         key: 'id'
-      },
-      field: 'gender_id'
+      }
     },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
-      defaultValue: sequelize.literal('CURRENT_TIMESTAMP'),
-      field: 'createdAt'
+      defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
     },
     updatedAt: {
       type: DataTypes.DATE,
-      allowNull: true,
-      field: 'updatedAt'
+      allowNull: true
     },
     deletedAt: {
       type: DataTypes.DATE,
-      allowNull: true,
-      field: 'deletedAt'
+      allowNull: true
     }
   }, {
     tableName: 'info'

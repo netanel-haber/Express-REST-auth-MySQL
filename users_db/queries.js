@@ -1,129 +1,111 @@
+const { users } = require('./models');
+const { validateKeysAndValues, validKeys } = require('./input_validation');
+
 const { genHash, genSalt } = require('../utilities/hash_salt');
 const { apiActionConclusion } = require('../db_action_conclusion');
-const { reorderKeyValuePairs } = require("../utilities/utilities");
 const { Messages } = require('../Messages');
 
-const { Tables } = require('./tables');
-const { validateKeysAndValues } = require('./input_validation');
-const { queryTheDB } = require('./connection_pool');
 
+async function addUser(data) {
+    let valResult = validateKeysAndValuesWrapper(data, validKeys.addUser);
+    if (valResult)
+        return valResult;
+
+    if (await users.findOne({ where: { username: data.username } }))
+        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.userExists });
+
+    let salt = genSalt();
+    let hash = genHash(data.password + salt);
+    delete data.password;
+
+    Object.assign(data, { salt, hash });
+
+    if (await users.create(data))
+        return new apiActionConclusion({ bottomLine: true });
+}
+
+
+async function authenticateUser(data) {
+    let valResult = validateKeysAndValuesWrapper(data, validKeys.authenticateUser);
+    if (valResult)
+        return valResult;
+
+    let result = await users.findOne({ where: { username: data.username } });
+    if (!result)
+        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.userNotFound });
+
+    let { hash, salt } = result;
+
+    if (genHash(data.password + salt) !== hash)
+        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.passIncorrect });
+
+    return new apiActionConclusion({ bottomLine: true });
+}
+
+
+async function changePassword({ username, data }) {
+    let valResult = validateKeysAndValuesWrapper(data, validKeys.changePassword);
+    if (valResult)
+        return valResult;
+
+    let salt = genSalt();
+    let hash = genHash(data.password + salt);
+    if (await users.update({ salt, hash }, { where: { username } }))
+        return new apiActionConclusion({ bottomLine: true });
+}
+
+async function updateUserInfo({ username, data }) {
+    let valResult = validateKeysAndValuesWrapper(data, validKeys.updateUser, false);
+    if (valResult)
+        return valResult;
+
+    if (await users.update(data, { where: { username } }))
+        return new apiActionConclusion({ bottomLine: true });
+}
+
+
+function validateKeysAndValuesWrapper(data, properKeys, checkEqualKeyLength = true) {
+    if (Object.keys(data).length > properKeys.length)
+        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.tooManyKeys });
+    if (checkEqualKeyLength && properKeys.length !== Object.keys(data).length)
+        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.insufInfo });
+
+    let inputValidation = validateKeysAndValues(data, properKeys);
+    if (inputValidation.invalidKeys || inputValidation.invalidValues)
+        return new apiActionConclusion(Object.assign({}, inputValidation));
+}
 
 Object.assign(module.exports, {
     INSERT: { addUser },
-    SELECT: { getValuesForFieldInTable, authenticateUser },
+    SELECT: { authenticateUser },
     UPDATE: { changePassword, updateUserInfo }
 });
 
 
-async function addUser(data) {
-    let keys = Object.keys(data), values = Object.values(data);
-    let inputKeys = await getUserInputFieldsForTable(Tables.users);
-    inputKeys.splice(1, 0, "password");
+// let g = {
+//     age: 35,
+//     first_name: "Ewinkg",
+//     last_name: "Dodson",
+//     gender_id: 0,
+//     username: "Mariakkn",
+//     password: "Robertklkls"
+// };
 
-    if (inputKeys.length !== keys.length)
-        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.insufInfo });
-
-    let inputValidation = await validateKeysAndValues(keys, values, inputKeys);
-    if (inputValidation.invalidKeys || inputValidation.invalidValues)
-        return new apiActionConclusion(Object.assign({}, inputValidation));
-
-    //check if username exists already
-    if (!await checkForPrimaryKeyInTable("username", data["username"], Tables.users))
-        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.userExists });
-
-    //gen hash
-    let passIndex = keys.indexOf("password");
-    let salt = genSalt();
-    let hash = genHash(values[passIndex] + salt);
-
-    keys.splice(passIndex, 1, "salt", "hash"); values.splice(passIndex, 1, salt, hash);
-
-    inputKeys.splice(1, 1, "salt", "hash");
-
-    //gen query
-    let dynamicKeyPlaceholders = "??,".repeat(keys.length).slice(0, -1);
-    let dynamicValuePlaceholders = "?,".repeat(keys.length).slice(0, -1);
-    let query = `INSERT INTO ?? (${dynamicKeyPlaceholders}) VALUES (${dynamicValuePlaceholders})`;
-    let orderedMap = reorderKeyValuePairs(keys, values, inputKeys);
-    await queryTheDB(query, [Tables.users, ...orderedMap.keys(), ...orderedMap.values()]);
-
-    return new apiActionConclusion({ bottomLine: true });
-}
-
-async function authenticateUser(data) {
-
-    let keys = Object.keys(data), values = Object.values(data);
-    let inputKeys = ["username", "password"];
-
-    let inputValidation = await validateKeysAndValues(keys, values, inputKeys);
-    if (inputValidation.invalidKeys || inputValidation.invalidValues)
-        return new apiActionConclusion(Object.assign({}, inputValidation));
-
-    let query = `SELECT * FROM ??
-        WHERE username=?;`;
-    let results = (await queryTheDB(query, [Tables.users, data.username]));
-    if (!results.length) return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.userNotFound });
-    let { hash: userHash, salt: salt } = results[0];
-    if (genHash(data["password"] + salt) !== userHash)
-        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.passIncorrect });
-
-    return new apiActionConclusion({ relevantResults: results });
-}
-
-
-async function changePassword(data) {
-    let { username, body } = data;
-    let keys = Object.keys(body), values = Object.values(body);
-    let inputKeys = ["password"];
-    let inputValidation = await validateKeysAndValues(keys, values, inputKeys);
-    if (inputValidation.invalidKeys || inputValidation.invalidValues)
-        return new apiActionConclusion(Object.assign({}, inputValidation));
-
-    let salt = genSalt();
-    let hash = genHash(body.password + salt);
-    let query = `UPDATE ?? SET ?? = ?, ?? = ?
-    WHERE ??=?`;
-    await queryTheDB(query, [Tables.users, "salt", salt, "hash", hash, "username", username]);
-    return new apiActionConclusion({ bottomLine: true });
-}
-
-async function updateUserInfo(data) {
-    let { username, body } = data;
-    let keys = Object.keys(body), values = Object.values(body);
-    let inputKeys = await getUserInputFieldsForTable(Tables.users);
-    let inputValidation = await validateKeysAndValues(keys, values, inputKeys);
-    if (inputValidation.invalidKeys || inputValidation.invalidValues)
-        return new apiActionConclusion(Object.assign({}, inputValidation));
-
-    let dynamicPlaceholders = "?? = ?,".repeat(keys.length).slice(0, -1);
-    let query = `UPDATE ?? SET ${dynamicPlaceholders}
-    WHERE ??=?`;
-    let orderedData = Array.from(reorderKeyValuePairs(keys, values, inputKeys)).flat();
-    await queryTheDB(query, [Tables.users, ...orderedData, "username", username]);
-    return new apiActionConclusion({ bottomLine: true });
-}
-
-async function checkForPrimaryKeyInTable(key, value, table) {
-    let query = `SELECT * FROM ${table} WHERE ??=?;`
-    let results = await queryTheDB(query, [key, value]);
-    return (results === null || results.length === 0);
-}
-async function getUserInputFieldsForTable(table) {
-    let query = `SHOW FULL COLUMNS FROM ${table};`;
-    let results = await queryTheDB(query);
-    return results.filter(column => column.Comment === "input").map(column => column["Field"]);
-}
-async function getValuesForFieldInTable(field, table) {
-    let query = `SELECT ?? FROM ${table}`;
-    let results = await queryTheDB(query, [field]);
-    return results.map(rowDataPacket => rowDataPacket[field]);
-}
-
-
-
-
-
-
+// (async () => {
+//     console.log(await addUser(g));
+//     console.log(await authenticateUser({
+//         username: "Mariakkn",
+//         password: "Robertklkls"
+//     }));
+//     console.log(await changePassword({
+//         username: "Mariakkn",
+//         password: "jkjkjkjkjkjkj"
+//     }));
+//     console.log(await updateUserInfo({
+//         username: "Mariakkn",
+//         first_name: "Kloopiii"
+//     }));
+// })();
 
 
 

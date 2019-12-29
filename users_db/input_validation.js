@@ -5,7 +5,8 @@ const RANGES = {
     age: { bottom: 18, top: 100 }
 };
 
-const { asyncForEach } = require("../utilities/utilities");
+const validGender_ids = [0, 1];
+
 const { apiActionConclusion } = require('../db_action_conclusion');
 
 const FATAL_INPUT_FOR_STRING = str => (str === null) || (str + "" !== str);
@@ -26,7 +27,7 @@ const TEST_FOR = {
         test: str => !/ /.test(str), message: () => "input cannot contain whitespace."
     },
     onlyLetters: {
-        test: str => /[a-zA-Z]/.test(str), message: () => "input can only contain letters."
+        test: str => /^[a-zA-Z]+$/.test(str), message: () => "input can only contain letters."
     },
     exceptFirstAllLowerCase: {
         test: str => /^[A-Z][a-z]+/.test(str), message: () => "input must be so that the first letter is uppercase, while all other letters are lowercase."
@@ -37,7 +38,6 @@ const TEST_FOR = {
     onlyLettersNumbersAndUnderScore: {
         test: str => !(/\W/.test(str)), message: () => "input must conatin only letters, numbers, and the underscore symbol."
     },
-
     NaN: {
         test: val => !isNaN(val), message: () => "input must be a number."
     },
@@ -71,10 +71,9 @@ validation = {
             [...collectFlags(str, TEST_FOR.notNull, TEST_FOR.isString)];
         return (raisedFlags.length === 0) ? null : new InputValidationSummary("password: " + str, raisedFlags);
     },
-    async gender_id(val) {
-        let { SELECT } = require("./queries");
+    gender_id(val) {
         let raisedFlags = !FATAL_INPUT_FOR_NUMBER(val) ?
-            [...collectFlags([val, ...await SELECT.getValuesForFieldInTable("gender_id", "static_gender")], TEST_FOR.allowedNumberRange), ...collectFlags(val, TEST_FOR.notInteger)] :
+            [...collectFlags([val, ...validGender_ids], TEST_FOR.allowedNumberRange), ...collectFlags(val, TEST_FOR.notInteger)] :
             [...collectFlags(val, TEST_FOR.NaN)];
         return (raisedFlags.length === 0) ? null : new InputValidationSummary("gender id: " + val, raisedFlags);
     },
@@ -89,7 +88,7 @@ validation = {
 function collectFlags(args, ...lowLevelTests) {
     let flags = [];
     for (let test of lowLevelTests) {
-        if (!test.test(args))
+        if (test.test(args) === false)
             flags.push(test.message(args.slice(1)));
     }
     return flags;
@@ -120,39 +119,45 @@ function keyValidation(enteredKeys, properKeys) {
     enteredKeys.forEach(key => {
         if (properKeys.indexOf(key) === -1) results.push(key);
     });
-    console.log(`   done validating keys. ${Date.now()-time}ms have passed ---`);
+    console.log(`   done validating keys. ${Date.now() - time}ms have passed ---`);
     return results.length > 0 ? results : null;
 }
 
-async function valueValidation(keys, values) {
+function valueValidation(data) {
     let failedHighLevelTests = [];
     let time = Date.now();
     console.log(`   --- validating values...`);
-    await asyncForEach(keys, async (field, index) => {
-        let test = getTestForFieldName(field);
+    Object.keys(data).forEach(key => {
+        let test = getTestForFieldName(key);
         if (test) {
-            let result = await test(values[index]);
-            if (result !== null)
+            let result = test(data[key])
+            if (result)
                 failedHighLevelTests.push(result);
         }
+        else
+            failedHighLevelTests.push(`Could not find test for ${key}`);
     });
-    console.log(`   done validating values. ${Date.now()-time}ms have passed ---`);
+    console.log(`   done validating values. ${Date.now() - time}ms have passed ---`);
     return failedHighLevelTests.length > 0 ? failedHighLevelTests : null;
 }
 
-async function validateKeysAndValues(enteredKeys, enteredValues, actualKeys) {   
+function validateKeysAndValues(data, actualKeys) {
     let accumulatedDbInfo = {};
-    accumulatedDbInfo.invalidKeys = keyValidation(enteredKeys, actualKeys);
-    accumulatedDbInfo.invalidValues = await valueValidation(enteredKeys, enteredValues);
+    let invalidKeys = keyValidation(Object.keys(data), actualKeys),
+        invalidValues = valueValidation(data);
+    if (invalidKeys)
+        Object.assign(accumulatedDbInfo, { invalidKeys });
+    if (invalidValues)
+        Object.assign(accumulatedDbInfo, { invalidValues });
     return accumulatedDbInfo;
 }
 
-async function validateKeyValuePair(data) {
+function validateKeyValuePair(data) {
     let key = Object.keys(data)[0];
     let value = Object.values(data)[0];
     let test = getTestForFieldName(key);
     if (test) {
-        let result = await test(value);
+        let result = test(value);
         if (!result)
             result = [];
     }
@@ -161,14 +166,23 @@ async function validateKeyValuePair(data) {
     return result;
 }
 
-async function valKeyValuePairWrapper(data) {
-    result = await validateKeyValuePair(data);
+function valKeyValuePairWrapper(data) {
+    result = validateKeyValuePair(data);
     if (!result)
         return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.noTestForField });
     return new apiActionConclusion({ relevantResults: result.length > 0 ? result : null });
 }
 
 
-Object.assign(module.exports, { validateKeysAndValues, valKeyValuePairWrapper });
+Object.assign(module.exports, {
+    validateKeysAndValues,
+    valKeyValuePairWrapper,
+    validKeys: {
+        addUser: ["first_name", "last_name", "age", "gender_id", "password", "username"],
+        authenticateUser: ["username", "password"],
+        changePassword: ["password"],
+        updateUser: ["first_name", "last_name", "age", "gender_id"]
+    }
+});
 
 

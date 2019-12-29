@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "start": "nodemon index.js",
-        "getModels": "node enVar.js && sequelize-auto -h process.env.MYSQL_HOST -d users -u process.env.MYSQL_USERNAME -x process.env.MYSQL_PASSWORD -p 3306  --dialect mysql -o C:\\Users\\viren\\Documents\\GitHub\\User_Account_Signin\\users_db\\sequelize\\models -C",
+        "getModels": "sequelize-auto -h nodetest.cfqshdcm1tco.eu-west-1.rds.amazonaws.com -d users -u admin -x froopigloopi -p 3306  --dialect mysql -o C:\\Users\\viren\\Documents\\GitHub\\User_Account_Signin\\users_db\\sequelize\\models",
         "check": "node enVar.js"
     },
     "author": "",
