@@ -185,4 +185,6 @@ Object.assign(module.exports, {
     }
 });
 
+//        "getModels": "sequelize-auto -h nodetest.cfqshdcm1tco.eu-west-1.rds.amazonaws.com -d users -u admin -x froopigloopi -p 3306  --dialect mysql -o C:\\Users\\viren\\Documents\\GitHub\\User_Account_Signin\\users_db\\sequelize\\models",
+
 
