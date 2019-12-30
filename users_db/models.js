@@ -24,7 +24,6 @@ Object.assign(module.exports, {
     genders, users
 });
 
-var exec = require('child_process').exec, child;
 
 
 
