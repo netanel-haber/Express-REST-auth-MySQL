@@ -5,6 +5,11 @@ const { genHash, genSalt } = require('../utilities/hash_salt');
 const { apiActionConclusion } = require('../db_action_conclusion');
 const { Messages } = require('../Messages');
 
+Object.assign(module.exports, {
+    INSERT: { addUser },
+    SELECT: { authenticateUser },
+    UPDATE: { changePassword, updateUserInfo }
+});
 
 async function addUser(data) {
     let valResult = validateKeysAndValuesWrapper(data, validKeys.addUser);
@@ -50,7 +55,10 @@ async function changePassword({ username, data }) {
 
     let salt = genSalt();
     let hash = genHash(data.password + salt);
-    if (await users.update({ salt, hash }, { where: { username } }))
+    let result = await users.update({ salt, hash },
+        { where: { username } });
+
+    if (result)
         return new apiActionConclusion({ bottomLine: true });
 }
 
@@ -75,37 +83,37 @@ function validateKeysAndValuesWrapper(data, properKeys, checkEqualKeyLength = tr
         return new apiActionConclusion(Object.assign({}, inputValidation));
 }
 
-Object.assign(module.exports, {
-    INSERT: { addUser },
-    SELECT: { authenticateUser },
-    UPDATE: { changePassword, updateUserInfo }
-});
 
 
-// let g = {
-//     age: 35,
-//     first_name: "Ewinkg",
-//     last_name: "Dodson",
-//     gender_id: 0,
-//     username: "Mariakkn",
-//     password: "Robertklkls"
-// };
 
-// (async () => {
-//     console.log(await addUser(g));
-//     console.log(await authenticateUser({
-//         username: "Mariakkn",
-//         password: "Robertklkls"
-//     }));
-//     console.log(await changePassword({
-//         username: "Mariakkn",
-//         password: "jkjkjkjkjkjkj"
-//     }));
-//     console.log(await updateUserInfo({
-//         username: "Mariakkn",
-//         first_name: "Kloopiii"
-//     }));
-// })();
+let g = {
+    age: 35,
+    first_name: "Ewinkg",
+    last_name: "Dodson",
+    gender_id: 0,
+    username: "Marijakkn",
+    password: "Robertklkls"
+};
+
+(async () => {
+    console.log(await addUser(g));
+    console.log(await authenticateUser({
+        username: "Marijakkn",
+        password: "Robertklkls"
+    }));
+    console.log(await changePassword({
+        username: "Mariakkn",
+        data: { password: "jkjkjkjkjkjkj" }
+    }));
+    console.log(await authenticateUser({
+        username: "Marijakkn",
+        password: "Robertklkls"
+    }));
+    console.log(await updateUserInfo({
+        username: "Mariakkn",
+        data: { first_name: "Kloopiii" }
+    }));
+})();
 
 
 
