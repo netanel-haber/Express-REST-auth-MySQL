@@ -1,11 +1,12 @@
 let jwt = require("jsonwebtoken");
+let { apiActionConclusion } = require('../db_action_conclusion');
 
-Object.assign(module.exports, { jwtVerificationWrapper, genJwt, extractToken });
+Object.assign(module.exports, { genJwt, extractToken, verifyToken });
 
 const secretKey = "secretKey";
-function genJwt(username, expiresIn) {
+function genJwt(payload, expiresIn) {
     return new Promise((res, rej) => {
-        jwt.sign({ username }, secretKey, { expiresIn: expiresIn }, (err, token) => {
+        jwt.sign({ payload }, secretKey, { expiresIn: expiresIn }, (err, token) => {
             (err) ?
                 rej(err) :
                 res(token);
@@ -13,32 +14,32 @@ function genJwt(username, expiresIn) {
     })
 }
 
-const messageIfCannotExtractToken = "CANNOT_EXTRACT_TOKEN";
 const messageIfTokenExpired = "TOKEN_EXPIRED";
 const defaultMessage = "INVALID_TOKEN";
-function jwtVerificationWrapper(req) {
-    console.log("verifying token...");
-    return new Promise((res, rej) => {
-        if (typeof req.token === undefined) {
-            rej(messageIfCannotExtractToken);
-            return;
+function verifyToken(req, res, next) {
+    jwt.verify(req.token, secretKey, (err, decoded) => {
+        if (err) {
+            res.status(403).json(new apiActionConclusion({
+                summaryOfQueryIfNotSuccess: err.name === "TokenExpiredError" ?
+                    messageIfTokenExpired : defaultMessage
+            }));
         }
-        jwt.verify(req.token, secretKey, (err, decoded) => {
-            (err) ?
-                rej(err.name === "TokenExpiredError" ?
-                    messageIfTokenExpired : defaultMessage) :
-                res(decoded);           
-        });
+        else {
+            req.bodyAfterTokenVerification = { decoded, data: req.body };
+            next();
+        }
     });
 }
 
+const messageIfCannotExtractToken = "CANNOT_EXTRACT_TOKEN";
 function extractToken(req, res, next) {
     console.log("extracting token...");
     let bearerHeader = req.headers['authorization'];
     if (typeof bearerHeader !== 'undefined') {
         let bearer = bearerHeader.split(' ');
         let bearerToken = bearer[1];
-        req.token = bearerToken;        
+        req.token = bearerToken;
+        next();
     }
-    next();
+    res.status(403).json(new apiActionConclusion({ summaryOfQueryIfNotSuccess: messageIfCannotExtractToken }));
 }

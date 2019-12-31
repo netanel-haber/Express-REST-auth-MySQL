@@ -18,6 +18,13 @@ const sequelize = new Sequelize('users', MYSQL_USERNAME, MYSQL_PASSWORD, {
             time = msg[1] + "ms";
             logWithColor(`\n{query: ${query}\ntime: ${time}}\n`);
         }
+    },
+    pool: {
+        max: 5,
+        min: 1,
+        acquire: 30000,
+        idle: 5000,
+        evict: 10000
     }
 });
 

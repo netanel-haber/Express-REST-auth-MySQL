@@ -3,7 +3,7 @@ const { validateKeysAndValues, validKeys } = require('./input_validation');
 
 const { genHash, genSalt } = require('../utilities/hash_salt');
 const { apiActionConclusion } = require('../db_action_conclusion');
-const { Messages } = require('../Messages');
+const { Messages } = require('./Messages');
 
 Object.assign(module.exports, {
     INSERT: { addUser },
@@ -48,7 +48,7 @@ async function authenticateUser(data) {
 }
 
 
-async function changePassword({ id, data }) {
+async function changePassword({ decoded: id, data }) {
     let valResult = validateKeysAndValuesWrapper(data, validKeys.changePassword);
     if (valResult)
         return valResult;
@@ -61,7 +61,7 @@ async function changePassword({ id, data }) {
 }
 
 
-async function updateUserInfo({ id, data }) {
+async function updateUserInfo({ decoded: id, data }) {
     let valResult = validateKeysAndValuesWrapper(data, validKeys.updateUser, false);
     if (valResult)
         return valResult;

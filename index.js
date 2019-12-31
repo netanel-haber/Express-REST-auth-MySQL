@@ -1,14 +1,13 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 
-
 const {
     INSERT: { addUser },
     SELECT: { authenticateUser },
     UPDATE: { changePassword, updateUserInfo } } = require('./users_db/queries');
 const { valKeyValuePairWrapper } = require('./users_db/input_validation');
 const { apiActionConclusion } = require('./db_action_conclusion');
-const { jwtVerificationWrapper, genJwt, extractToken } = require('./utilities/jwt');
+const { genJwt, extractToken, verifyToken } = require('./utilities/jwt');
 
 const port = 3000;
 const app = express();
@@ -19,13 +18,13 @@ app.post('/user/add', async (req, res) => {
     res.status(statusCode).json(result);
 });
 
-app.post('/user/changePassword', extractToken, async (req, res) => {
-    let { statusCode, result } = await verifyTokenThenExecuteAction(req, changePassword, req.body);
+app.post('/user/changePassword', extractToken, verifyToken, async (req, res) => {
+    let { statusCode, result } = await executeAction(changePassword, req.bodyAfterTokenVerification);
     res.status(statusCode).json(result);
 });
 
-app.post('/user/updateInfo', extractToken, async (req, res) => {
-    let { statusCode, result } = await verifyTokenThenExecuteAction(req, updateUserInfo, req.body);
+app.post('/user/updateInfo', extractToken, verifyToken, async (req, res) => {
+    let { statusCode, result } = await executeAction(updateUserInfo, req.bodyAfterTokenVerification);
     res.status(statusCode).json(result);
 });
 
@@ -56,18 +55,6 @@ app.get('/api/validateSingleKeyValuePair', async (req, res) => {
 });
 
 
-
-async function verifyTokenThenExecuteAction(req, action, data) {
-    let result;
-    let decoded = await jwtVerificationWrapper(req).catch((err) => {
-        statusCode = 403;
-        result = new apiActionConclusion({ summaryOfQueryIfNotSuccess: err });
-    });
-    if (typeof decoded !== 'undefined')
-        ({ statusCode, result } = await executeAction(action, { id: decoded.username, data }));
-    return { statusCode, result };
-}
-
 async function executeAction(action, data) {
     console.log(`\n---\nattempting to ${action.name}...\n`);
     let time = Date.now();
@@ -87,7 +74,6 @@ async function executeAction(action, data) {
     }
     console.log(`\n${message}\n`);
     console.log(`${Date.now() - time}ms have passed\n---\n`);
-
     return { statusCode: statusCode, result };
 }
 
