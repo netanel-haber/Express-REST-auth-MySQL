@@ -3,7 +3,7 @@ const changePassword = require('./change_password.js');
 const updateUser = require('./update');
 const login = require('./login.js');
 const express = require('express');
-const {extractToken, verifyToken} = require('../../utilities/jwt')
+const { extractToken, verifyToken } = require('../../utilities/jwt')
 const validationMiddlewareFactory = require("../../input_validation/users_db/validationMiddlewareFactory");
 
 addUserValidation = validationMiddlewareFactory("addUser");

@@ -1,5 +1,4 @@
-const userInputValidation = require('./validation_config');
-const validKeysInfo = require('./validation_config');
+const { validKeysInfo, userInputValidation } = require('./validation_config');
 const apiActionConclusion = require("../../db_action_conclusion");
 const Messages = require("../../users_db/Messages");
 
@@ -15,7 +14,7 @@ module.exports = (actionName) => {
 }
 
 function validateKeysAndValuesWrapper(data, validKeysInfo) {
-    let { validKeys, checkEqualKeyLength = true } = validKeysInfo;
+    let { keys: validKeys, checkLength: checkEqualKeyLength = true } = validKeysInfo;
     if (Object.keys(data).length > validKeys.length)
         return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.tooManyKeys });
     if (checkEqualKeyLength && validKeys.length !== Object.keys(data).length)

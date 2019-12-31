@@ -1,4 +1,4 @@
-module.exports.apiActionConclusion = class {
+module.exports = class {
     constructor({
         bottomLine = false,
         relevantResults = null,

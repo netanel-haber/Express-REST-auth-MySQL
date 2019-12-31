@@ -1,13 +1,14 @@
 const apiActionConclusion = require('../db_action_conclusion');
 
-module.exports.keyValidation = (enteredKeys, properKeys) => {
+
+let keyValidation = (enteredKeys, properKeys) => {
     let results = [];
     enteredKeys.forEach(key => {
         if (properKeys.indexOf(key) === -1) results.push(key);
     });
     return results.length > 0 ? results : null;
 }
-module.exports.valueValidation = (data, higherLevelTests) => {
+let valueValidation = (data, higherLevelTests) => {
     let failedHighLevelTests = [];
     Object.keys(data).forEach(key => {
         let test = getTestForFieldName(key, higherLevelTests);
@@ -22,7 +23,7 @@ module.exports.valueValidation = (data, higherLevelTests) => {
     return failedHighLevelTests.length > 0 ? failedHighLevelTests : null;
 }
 
-module.exports.getTestForFieldName = (fieldName, higherLevelTests) => {
+let getTestForFieldName = (fieldName, higherLevelTests) => {
     let test;
     try {
         test = higherLevelTests[fieldName] ? higherLevelTests[fieldName] : higherLevelTests[Object.keys(higherLevelTests).filter(test => fieldName.includes(test))[0]];
@@ -33,7 +34,8 @@ module.exports.getTestForFieldName = (fieldName, higherLevelTests) => {
     return test;
 }
 
-module.exports.validateKeysAndValues = (data, actualKeys, higherLevelTests) => {
+
+let validateKeysAndValues = function (data, actualKeys, higherLevelTests) {
     let accumulatedDbInfo = {};
     let invalidKeys = keyValidation(Object.keys(data), actualKeys),
         invalidValues = valueValidation(data, higherLevelTests);
@@ -44,7 +46,8 @@ module.exports.validateKeysAndValues = (data, actualKeys, higherLevelTests) => {
     return accumulatedDbInfo;
 }
 
-module.exports.validateKeyValuePair = (data) => {
+
+let validateKeyValuePair = (data) => {
     let key = Object.keys(data)[0];
     let value = Object.values(data)[0];
     let test = getTestForFieldName(key, tests);
@@ -58,7 +61,7 @@ module.exports.validateKeyValuePair = (data) => {
     return result;
 }
 
-module.exports.valKeyValuePairWrapper = (data) => {
+let valKeyValuePairWrapper = (data) => {
     result = validateKeyValuePair(data);
     if (!result)
         return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.noTestForField });
@@ -76,7 +79,7 @@ module.exports.collectFlags = (args, ...lowLevelTests) => {
 
 module.exports.KeyAndValueValidationFunctionFactory = (higherLevelTests, validKeys) => {
     return (data) => {
-        validateKeysAndValues(data, validKeys, higherLevelTests);
+        return validateKeysAndValues(data, validKeys, higherLevelTests);
     }
 }
 

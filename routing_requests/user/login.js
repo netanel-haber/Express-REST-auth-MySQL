@@ -1,10 +1,10 @@
 const executeAction = require('../../queries/queryWrapper');
-const authenticateUser = require('../../queries/users');
+const { authenticateUser } = require('../../queries/users');
 
 const apiActionConclusion = require('../../db_action_conclusion');
 const { genJwt } = require('../../utilities/jwt');
 
-
+const tokenExpirationString = '90s';
 module.exports = async (req, res) => {
     const userDetails = req.body;
 
@@ -19,6 +19,6 @@ module.exports = async (req, res) => {
         statusCode = 500;
         result = null;
     });
-    if (token) result = new apiActionConclusion({ relevantResults: token });
+    if (token) result = new apiActionConclusion({ bottomLine: true });
     res.status(statusCode).json(result);
 };

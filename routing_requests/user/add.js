@@ -1,5 +1,5 @@
 const executeAction = require('../../queries/queryWrapper');
-const addUser = require('../../queries/users');
+const {addUser} = require('../../queries/users');
 
 module.exports = async (req, res) => {
     let { statusCode, result } = await executeAction(addUser, req.body);

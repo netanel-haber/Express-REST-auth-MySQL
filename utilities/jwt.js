@@ -1,5 +1,5 @@
-let jwt = require("jsonwebtoken");
-let { apiActionConclusion } = require('../db_action_conclusion');
+const jwt = require("jsonwebtoken");
+const apiActionConclusion = require('../db_action_conclusion');
 
 Object.assign(module.exports, { genJwt, extractToken, verifyToken });
 
@@ -25,7 +25,9 @@ function verifyToken(req, res, next) {
             }));
         }
         else {
-            req.bodyAfterTokenVerification = { decoded, data: req.body };
+            req.bodyAfterTokenVerification = {
+                decoded: decoded.payload, data: req.body
+            };
             next();
         }
     });
@@ -41,5 +43,7 @@ function extractToken(req, res, next) {
         req.token = bearerToken;
         next();
     }
-    res.status(403).json(new apiActionConclusion({ summaryOfQueryIfNotSuccess: messageIfCannotExtractToken }));
+    else {
+        res.status(403).json(new apiActionConclusion({ summaryOfQueryIfNotSuccess: messageIfCannotExtractToken }));
+    }
 }

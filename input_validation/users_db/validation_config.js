@@ -1,5 +1,4 @@
-const collectFlags = require("../validationTools").collectFlags;
-const KeyAndValueValidationFunctionFactory = require("../validationTools").KeyAndValueValidationFunctionFactory;
+const {KeyAndValueValidationFunctionFactory,collectFlags} = require("../validationTools");
 const InputValidationSummary = require('../InputValidationSummary');
 
 const RANGES = {
@@ -98,7 +97,8 @@ module.exports.validKeysInfo = {
 
 
 module.exports.userInputValidation = (validKeys, data) => {
-    return KeyAndValueValidationFunctionFactory(higherLevelTests, validKeys)(data);
+    let valFunc = KeyAndValueValidationFunctionFactory(higherLevelTests, validKeys);
+    return valFunc(data);
 }
 
 

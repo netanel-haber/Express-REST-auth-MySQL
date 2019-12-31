@@ -13,7 +13,7 @@ module.exports = async function executeAction(action, data) {
     }
     catch (ex) {
         statusCode = 500;
-        message = `--- attempt to ${action.name} was unsuccessful. server error. ${JSON.stringify(ex)}. ---`;
+        message = `--- attempt to ${action.name} was unsuccessful. server error. ${ex}. ---`;
     }
     console.log(`\n${message}\n`);
     console.log(`${Date.now() - time}ms have passed\n---\n`);

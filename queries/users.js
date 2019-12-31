@@ -1,6 +1,6 @@
 const { users } = require('../users_db/models');
 const { genHash, genSalt } = require('../utilities/hash_salt');
-const { apiActionConclusion } = require('../db_action_conclusion');
+const apiActionConclusion = require('../db_action_conclusion');
 const { Messages } = require('../users_db/Messages');
 
 Object.assign(module.exports, {
@@ -39,7 +39,7 @@ async function changePassword({ decoded: id, data }) {
     let hash = genHash(data.password + salt);
     let result = await users.update({ salt, hash }, { where: { id } });
     if (result)
-        return new apiActionConclusion({ bottomLine: true });
+        return new apiActionConclusion({ relevantResults: id });
 }
 
 async function updateUserInfo({ decoded: id, data }) {
