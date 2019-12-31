@@ -1,6 +1,5 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { MYSQL_PASSWORD, MYSQL_HOST, MYSQL_USERNAME } = require('./enVar');
 
 
 const {
@@ -41,8 +40,8 @@ app.post('/user/login', async (req, res) => {
         return;
     }
 
-    let { username } = req.body;
-    token = await genJwt(username, tokenExpirationString).catch(() => {
+    let { relevantResults: user_id } = result;
+    token = await genJwt(user_id, tokenExpirationString).catch(() => {
         statusCode = 500;
         result = null;
     });
@@ -65,7 +64,7 @@ async function verifyTokenThenExecuteAction(req, action, data) {
         result = new apiActionConclusion({ summaryOfQueryIfNotSuccess: err });
     });
     if (typeof decoded !== 'undefined')
-        ({ statusCode, result } = await executeAction(action, { username: decoded.username, data }));
+        ({ statusCode, result } = await executeAction(action, { id: decoded.username, data }));
     return { statusCode, result };
 }
 

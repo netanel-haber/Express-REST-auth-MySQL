@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "start": "nodemon index.js",
-        "getModels": "node ./getmodels.js",
+        "auto_sequelize_users_db": "node ./users_db/sequelize/auto_sequelize_users_db_models.js",
         "check": "node enVar.js"
     },
     "author": "",

@@ -113,20 +113,15 @@ function getTestForFieldName(fieldName) {
 }
 
 function keyValidation(enteredKeys, properKeys) {
-    let time = Date.now();
-    console.log(`   --- validating keys...`);
     let results = [];
     enteredKeys.forEach(key => {
         if (properKeys.indexOf(key) === -1) results.push(key);
     });
-    console.log(`   done validating keys. ${Date.now() - time}ms have passed ---`);
     return results.length > 0 ? results : null;
 }
 
 function valueValidation(data) {
     let failedHighLevelTests = [];
-    let time = Date.now();
-    console.log(`   --- validating values...`);
     Object.keys(data).forEach(key => {
         let test = getTestForFieldName(key);
         if (test) {
@@ -137,7 +132,6 @@ function valueValidation(data) {
         else
             failedHighLevelTests.push(`Could not find test for ${key}`);
     });
-    console.log(`   done validating values. ${Date.now() - time}ms have passed ---`);
     return failedHighLevelTests.length > 0 ? failedHighLevelTests : null;
 }
 
