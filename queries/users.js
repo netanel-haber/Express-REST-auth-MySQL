@@ -1,7 +1,7 @@
-const { users } = require('./models');
+const { users } = require('../users_db/models');
 const { genHash, genSalt } = require('../utilities/hash_salt');
 const { apiActionConclusion } = require('../db_action_conclusion');
-const { Messages } = require('./Messages');
+const { Messages } = require('../users_db/Messages');
 
 Object.assign(module.exports, {
     addUser, authenticateUser, changePassword, updateUserInfo

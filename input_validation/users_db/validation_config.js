@@ -1,5 +1,6 @@
-import { collectFlags, KeyAndValueValidationFunctionFactory } from "../validationTools";
-import InputValidationSummary from '../InputValidationSummary';
+const collectFlags = require("../validationTools").collectFlags;
+const KeyAndValueValidationFunctionFactory = require("../validationTools").KeyAndValueValidationFunctionFactory;
+const InputValidationSummary = require('../InputValidationSummary');
 
 const RANGES = {
     username: { bottom: 6, top: 15 },
@@ -88,7 +89,7 @@ let higherLevelTests = {
 };
 
 
-export let validKeysInfo = {
+module.exports.validKeysInfo = {
     addUser: { keys: ["first_name", "last_name", "age", "gender_id", "password", "username"] },
     login: { keys: ["username", "password"] },
     changePassword: { keys: ["password"] },
@@ -96,7 +97,7 @@ export let validKeysInfo = {
 };
 
 
-export function userInputValidation(validKeys, data) {
+module.exports.userInputValidation = (validKeys, data) => {
     return KeyAndValueValidationFunctionFactory(higherLevelTests, validKeys)(data);
 }
 

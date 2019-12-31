@@ -1,7 +1,7 @@
-import executeAction from '../../queries/queryWrapper';
-import addUser from '../../queries/users';
+const executeAction = require('../../queries/queryWrapper');
+const addUser = require('../../queries/users');
 
-export default async (req, res) => {
+module.exports = async (req, res) => {
     let { statusCode, result } = await executeAction(addUser, req.body);
     res.status(statusCode).json(result);
 }

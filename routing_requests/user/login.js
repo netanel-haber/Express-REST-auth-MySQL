@@ -1,11 +1,11 @@
-import executeAction from '../../queries/queryWrapper';
-import authenticateUser from '../../queries/users';
+const executeAction = require('../../queries/queryWrapper');
+const authenticateUser = require('../../queries/users');
 
-const apiActionConclusion = require('./db_action_conclusion');
-const { genJwt } = require('./utilities/jwt');
+const apiActionConclusion = require('../../db_action_conclusion');
+const { genJwt } = require('../../utilities/jwt');
 
 
-export default async (req, res) => {
+module.exports = async (req, res) => {
     const userDetails = req.body;
 
     let { statusCode, result } = await executeAction(authenticateUser, userDetails);

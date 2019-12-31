@@ -1,4 +1,4 @@
-export default async function executeAction(action, data) {
+module.exports = async function executeAction(action, data) {
     console.log(`\n---\nattempting to ${action.name}...\n`);
     let time = Date.now();
     let message = `attempt to ${action.name} was successful`;

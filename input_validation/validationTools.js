@@ -1,13 +1,13 @@
-import apiActionConclusion from '../db_action_conclusion';
+const apiActionConclusion = require('../db_action_conclusion');
 
-export function keyValidation(enteredKeys, properKeys) {
+module.exports.keyValidation = (enteredKeys, properKeys) => {
     let results = [];
     enteredKeys.forEach(key => {
         if (properKeys.indexOf(key) === -1) results.push(key);
     });
     return results.length > 0 ? results : null;
 }
-export function valueValidation(data, higherLevelTests) {
+module.exports.valueValidation = (data, higherLevelTests) => {
     let failedHighLevelTests = [];
     Object.keys(data).forEach(key => {
         let test = getTestForFieldName(key, higherLevelTests);
@@ -22,7 +22,7 @@ export function valueValidation(data, higherLevelTests) {
     return failedHighLevelTests.length > 0 ? failedHighLevelTests : null;
 }
 
-export function getTestForFieldName(fieldName, higherLevelTests) {
+module.exports.getTestForFieldName = (fieldName, higherLevelTests) => {
     let test;
     try {
         test = higherLevelTests[fieldName] ? higherLevelTests[fieldName] : higherLevelTests[Object.keys(higherLevelTests).filter(test => fieldName.includes(test))[0]];
@@ -33,7 +33,7 @@ export function getTestForFieldName(fieldName, higherLevelTests) {
     return test;
 }
 
-export function validateKeysAndValues(data, actualKeys, higherLevelTests) {
+module.exports.validateKeysAndValues = (data, actualKeys, higherLevelTests) => {
     let accumulatedDbInfo = {};
     let invalidKeys = keyValidation(Object.keys(data), actualKeys),
         invalidValues = valueValidation(data, higherLevelTests);
@@ -44,7 +44,7 @@ export function validateKeysAndValues(data, actualKeys, higherLevelTests) {
     return accumulatedDbInfo;
 }
 
-export function validateKeyValuePair(data) {
+module.exports.validateKeyValuePair = (data) => {
     let key = Object.keys(data)[0];
     let value = Object.values(data)[0];
     let test = getTestForFieldName(key, tests);
@@ -58,14 +58,14 @@ export function validateKeyValuePair(data) {
     return result;
 }
 
-export function valKeyValuePairWrapper(data) {
+module.exports.valKeyValuePairWrapper = (data) => {
     result = validateKeyValuePair(data);
     if (!result)
         return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.noTestForField });
     return new apiActionConclusion({ relevantResults: result.length > 0 ? result : null });
 }
 
-export function collectFlags(args, ...lowLevelTests) {
+module.exports.collectFlags = (args, ...lowLevelTests) => {
     let flags = [];
     for (let test of lowLevelTests) {
         if (test.test(args) === false)
@@ -74,7 +74,7 @@ export function collectFlags(args, ...lowLevelTests) {
     return flags;
 }
 
-export function KeyAndValueValidationFunctionFactory(higherLevelTests, validKeys) {
+module.exports.KeyAndValueValidationFunctionFactory = (higherLevelTests, validKeys) => {
     return (data) => {
         validateKeysAndValues(data, validKeys, higherLevelTests);
     }

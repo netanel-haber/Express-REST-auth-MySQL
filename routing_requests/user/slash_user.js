@@ -1,9 +1,10 @@
-import addUser from './add';
-import changePassword from './change_password';
-import updateUser from './update';
-import login from './login';
-import express from 'express';
-import validationMiddlewareFactory from "../../input_validation/users_db/validationMiddlewareFactory";
+const addUser = require('./add.js');
+const changePassword = require('./change_password.js');
+const updateUser = require('./update');
+const login = require('./login.js');
+const express = require('express');
+const {extractToken, verifyToken} = require('../../utilities/jwt')
+const validationMiddlewareFactory = require("../../input_validation/users_db/validationMiddlewareFactory");
 
 addUserValidation = validationMiddlewareFactory("addUser");
 changePasswordValidation = validationMiddlewareFactory("changePassword");
@@ -18,5 +19,5 @@ router
     .post('/updateInfo', updateUserValidation, extractToken, verifyToken, updateUser)
     .post('/login', loginValidation, login);
 
-export default router;
+module.exports = router;
 

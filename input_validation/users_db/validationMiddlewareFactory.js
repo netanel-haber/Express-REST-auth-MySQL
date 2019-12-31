@@ -1,9 +1,9 @@
-import userInputValidation from './validation_config';
-import validKeysInfo from './validation_config';
-import apiActionConclusion from "../../db_action_conclusion";
-import Messages from "../../users_db/Messages";
+const userInputValidation = require('./validation_config');
+const validKeysInfo = require('./validation_config');
+const apiActionConclusion = require("../../db_action_conclusion");
+const Messages = require("../../users_db/Messages");
 
-export default (actionName) => {
+module.exports = (actionName) => {
     return (req, res, next) => {
         let result = validateKeysAndValuesWrapper(req.body, validKeysInfo[actionName]);
         if (result) {

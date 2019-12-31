@@ -1,7 +1,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const slashUser = require('./routing_requests/user/slash_user');
-const slashApi = require('./routing_requests/user/slash_user')
+const slashUser = require('./routing_requests/user/slash_user.js');
+const slashApi = require('./routing_requests/user/slash_user.js')
 
 const port = 3000;
 const app = express();
