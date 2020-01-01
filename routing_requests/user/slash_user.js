@@ -6,10 +6,10 @@ const express = require('express');
 const { extractToken, verifyToken } = require('../../utilities/jwt')
 const validationMiddlewareFactory = require("../../input_validation/users_db/validationMiddlewareFactory");
 
-addUserValidation = validationMiddlewareFactory("addUser");
-changePasswordValidation = validationMiddlewareFactory("changePassword");
-updateUserValidation = validationMiddlewareFactory("updateUser");
-loginValidation = validationMiddlewareFactory("login");
+let addUserValidation = validationMiddlewareFactory("addUser");
+let changePasswordValidation = validationMiddlewareFactory("changePassword");
+let updateUserValidation = validationMiddlewareFactory("updateUser");
+let loginValidation = validationMiddlewareFactory("login");
 
 
 const router = express.Router();

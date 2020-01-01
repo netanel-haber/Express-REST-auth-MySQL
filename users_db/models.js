@@ -6,27 +6,28 @@ function logWithColor(string) {
     console.log(sequelizeColorsConsole, string)
 }
 
-const sequelize = new Sequelize('users', MYSQL_USERNAME, MYSQL_PASSWORD, {
-    host: MYSQL_HOST,
-    dialect: 'mysql',
-    benchmark: true,
-    logging: (...msg) => {
-        if (msg[0].includes("1+1"))
-            logWithColor('testing db connection with default query...');
-        else {
-            query = (msg[0].split(": ")[1]);
-            time = msg[1] + "ms";
-            logWithColor(`\n{query: ${query}\ntime: ${time}}\n`);
+const sequelize = new Sequelize('users', MYSQL_USERNAME, MYSQL_PASSWORD,
+    {
+        host: MYSQL_HOST,
+        dialect: 'mysql',
+        benchmark: true,
+        logging: (...msg) => {
+            if (msg[0].includes("1+1"))
+                logWithColor('testing db connection with default query...');
+            else {
+                query = (msg[0].split(": ")[1]);
+                time = msg[1] + "ms";
+                logWithColor(`\n{query: ${query}\ntime: ${time}}\n`);
+            }
+        },
+        pool: {
+            max: 5,
+            min: 1,
+            acquire: 30000,
+            idle: 5000,
+            evict: 10000
         }
-    },
-    pool: {
-        max: 5,
-        min: 1,
-        acquire: 30000,
-        idle: 5000,
-        evict: 10000
-    }
-});
+    });
 
 
 
