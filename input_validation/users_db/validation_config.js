@@ -1,4 +1,4 @@
-const {KeyAndValueValidationFunctionFactory,collectFlags} = require("../validationTools");
+const { KeyAndValueValidationFunctionFactory, collectFlags } = require("../validationTools");
 const InputValidationSummary = require('../InputValidationSummary');
 
 const RANGES = {

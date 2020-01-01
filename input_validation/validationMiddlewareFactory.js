@@ -1,6 +1,6 @@
-const { validKeysInfo, userInputValidation } = require('./validation_config');
-const apiActionConclusion = require("../../db_action_conclusion");
-const Messages = require("../../users_db/Messages");
+const { validKeysInfo, userInputValidation } = require('./users_db/validation_config');
+const apiActionConclusion = require("../db_action_conclusion");
+const Messages = require("../users_db/Messages");
 
 module.exports = (actionName) => {
     return (req, res, next) => {
