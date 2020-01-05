@@ -15,10 +15,10 @@ module.exports = async (req, res) => {
     }
 
     let { relevantResults: user_id } = result;
-    token = await genJwt(user_id, tokenExpirationString).catch(() => {
+    let token = await genJwt(user_id, tokenExpirationString).catch(() => {
         statusCode = 500;
         result = null;
     });
-    if (token) result = new apiActionConclusion({ bottomLine: true });
+    if (token) result = new apiActionConclusion({ relevantResults: token });
     res.status(statusCode).json(result);
 };

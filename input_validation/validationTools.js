@@ -1,6 +1,3 @@
-const apiActionConclusion = require('../db_action_conclusion');
-
-
 let keyValidation = (enteredKeys, properKeys) => {
     let results = [];
     enteredKeys.forEach(key => {
@@ -61,12 +58,6 @@ let validateKeyValuePair = (data) => {
     return result;
 }
 
-let valKeyValuePairWrapper = (data) => {
-    result = validateKeyValuePair(data);
-    if (!result)
-        return new apiActionConclusion({ summaryOfQueryIfNotSuccess: Messages.noTestForField });
-    return new apiActionConclusion({ relevantResults: result.length > 0 ? result : null });
-}
 
 module.exports.collectFlags = (args, ...lowLevelTests) => {
     let flags = [];
