@@ -13,7 +13,7 @@ module.exports = class {
             invalidValues: invalidValues,
             summaryOfQueryIfNotSuccess: summaryOfQueryIfNotSuccess,
         }
-    };
+    }
 }
 
 

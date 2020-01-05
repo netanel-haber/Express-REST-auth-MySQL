@@ -15,11 +15,13 @@ let loginValidation = userDbValidationMiddlewareFactory("login");
 
 
 const router = express.Router();
+//  path=/user/...
 router
     .post('/add', addUserValidation, addUser)
+    .post('/login', loginValidation, login)
     .post('/changePassword', changePasswordValidation, extractToken, verifyToken, changePassword)
     .post('/updateInfo', updateUserValidation, extractToken, verifyToken, updateUser)
-    .post('/login', loginValidation, login);
+    
 
 module.exports = router;
 

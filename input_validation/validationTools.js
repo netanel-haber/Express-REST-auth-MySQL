@@ -28,7 +28,7 @@ let getTestForFieldName = (fieldName, higherLevelTests) => {
     try {
         test = higherLevelTests[fieldName] ? higherLevelTests[fieldName] : higherLevelTests[Object.keys(higherLevelTests).filter(test => fieldName.includes(test))[0]];
     }
-    catch {
+    catch (ex) {
         test = null;
     }
     return test;

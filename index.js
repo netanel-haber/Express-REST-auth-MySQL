@@ -9,6 +9,9 @@ app.use(bodyParser.json());
 app.use('/user', slashUser);
 
 
+
+
+
 app.listen(port, () => {
     console.log(`The server is running on port ${port}`);
 });
