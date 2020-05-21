@@ -1,1 +1,1 @@
-# tapliyot_node_drill
+REST auth API written in Express; MySQL DB
